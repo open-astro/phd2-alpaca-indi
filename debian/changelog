@@ -1,13 +1,15 @@
-phd2 (1.1.0) stable; urgency=low
+phd2-alpaca (1.1.0) stable; urgency=low
 
   * Sync package changelog from root CHANGELOG.md for release 1.1.0.
   * See CHANGELOG.md for detailed release notes.
 
  -- Joey Troy <joey.troy@gmail.com>  Sat, 07 Mar 2026 20:39:14 -0700
 
-phd2 (1.0.0) stable; urgency=low
+phd2-alpaca (1.0.0) stable; urgency=low
 
-  * Initial OpenAstro PHD2 release.
+  * Initial OpenAstro PHD2 Alpaca release.
+  * Renamed package from phd2 to phd2-alpaca.
   * Linux .deb build support and Alpaca Linux packaging/build updates.
+  * Headless systemd service running as dedicated phd2-alpaca system user.
 
  -- Joey Troy <joey.troy@gmail.com>  Wed, 04 Mar 2026 12:00:00 +0000

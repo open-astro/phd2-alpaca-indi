@@ -7,25 +7,10 @@
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/default.mk
 
-# see FEATURE AREAS in dpkg-buildflags(1)
-#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-
-# see ENVIRONMENT in dpkg-buildflags(1)
-# package maintainers to append CFLAGS
-#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
-# package maintainers to append LDFLAGS
-#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-
 
 # main packaging script based on dh7 syntax
 %:
-	dh $@ 
-
-# debmake generated override targets
-# This is example for Cmake (See http://bugs.debian.org/641051 )
-#override_dh_auto_configure:
-#	dh_auto_configure -- \
-#	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+	dh $@
 
 # Set PHD2_ALLOW_INDI_1_9=1 in the environment to allow building with system INDI 1.9.x (e.g. Debian/RPi)
 override_dh_auto_configure:
@@ -38,14 +23,26 @@ override_dh_auto_configure:
 	CHANGELOG_VERSION="$$(dpkg-parsechangelog -S Version | sed -E 's/-[^-]+$$//')"; \
 	if [ "$$CHANGELOG_VERSION" != "$$VERSION" ]; then \
 		echo "Syncing debian/changelog version $$CHANGELOG_VERSION -> $$VERSION"; \
-		sed -i -E "1 s/^phd2 \\([^)]*\\) /phd2 ($$VERSION) /" $(CURDIR)/debian/changelog; \
+		sed -i -E "1 s/^phd2-alpaca \\([^)]*\\) /phd2-alpaca ($$VERSION) /" $(CURDIR)/debian/changelog; \
 	fi
 	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=1 -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1 $(if $(PHD2_ALLOW_INDI_1_9),-DPHD2_ALLOW_INDI_1_9=1,)
 
+override_dh_auto_install:
+	dh_auto_install
+	# Rename the installed binary from 'phd2' to 'phd2-alpaca'
+	if [ -f $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 ]; then \
+		mv $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 \
+		   $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2-alpaca; \
+	fi
+	# Bundle INDI 2.x runtime libs (built from source in the Docker image;
+	# Debian trixie only ships 1.9.9 which is too old)
+	mkdir -p $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca
+	find /usr/local/lib -name 'libindi*.so*' ! -type d \
+		-exec cp -P {} $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca/ \;
 
-
-# Tell dh_shlibdeps where to find proprietary camera libraries
-# Needed when building with OPENSOURCE_ONLY=0 (bundled binary-only libraries in /usr/lib/phd2/)
-# Harmless when OPENSOURCE_ONLY=1 (directory won't exist)
+# Tell dh_shlibdeps where to find bundled libraries (INDI 2.x + any future
+# proprietary camera libs when OPENSOURCE_ONLY=0).
+# --ignore-missing-info suppresses errors for libs not owned by any .deb package.
 override_dh_shlibdeps:
-	dh_shlibdeps -l$(CURDIR)/debian/phd2/usr/lib/phd2
+	dh_shlibdeps -l$(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca \
+		--dpkg-shlibdeps-params=--ignore-missing-info

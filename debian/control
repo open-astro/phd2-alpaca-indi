@@ -1,16 +1,35 @@
-Source: phd2
-Section: education
+Source: phd2-alpaca
+Section: science
 Priority: optional
-Maintainer: Patrick Chevalley <pch@ap-i.net>
-Build-Depends: debhelper (>= 9), cmake, libwxgtk3.2-dev | libwxgtk3.0-dev | libwxgtk3.0-gtk3-dev, libcfitsio-dev, libopencv-dev, libusb-1.0-0-dev, libudev-dev, libv4l-dev, libnova-dev, libcurl4-gnutls-dev, libindi-dev (>= 2.0), libeigen3-dev, libgtest-dev
-Standards-Version: 3.9.5
-Homepage: http://openphdguiding.org/
+Maintainer: OpenAstro <support@openastro.net>
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               libwxgtk3.2-dev | libwxgtk3.0-dev | libwxgtk3.0-gtk3-dev,
+               libcfitsio-dev,
+               libopencv-dev,
+               libusb-1.0-0-dev,
+               libudev-dev,
+               libv4l-dev,
+               libnova-dev,
+               libcurl4-gnutls-dev,
+               libeigen3-dev,
+               libgtest-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/open-astro/phd2-alpaca
 
-Package: phd2
+Package: phd2-alpaca
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         adduser,
+         xvfb
 Suggests: indi-bin
-Description: PHD Guiding, auto-guiding of your telescope
- PHD Guiding is designed to be "Push Here Dummy" simple, yet provide powerful, 
- intelligent auto-guiding of your telescope. 
- Connect your mount, your camera, select a star, and start guiding. That's it!
+Description: PHD2 auto-guiding with ASCOM Alpaca support
+ PHD2 is a telescope auto-guiding application designed to be easy to use
+ while providing powerful, intelligent guiding. Connect your mount, your
+ camera, select a star, and start guiding.
+ .
+ This build includes integrated ASCOM Alpaca support for controlling cameras,
+ mounts, and rotators over the local network without INDI or ASCOM drivers.
+ .
+ Runs headlessly as the phd2-alpaca system user via systemd, exposing the
+ PHD2 JSON-RPC API for remote control by planetarium and capture software.

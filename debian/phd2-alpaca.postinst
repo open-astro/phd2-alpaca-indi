@@ -1,0 +1,33 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Create the phd2-alpaca system user if it does not exist
+        if ! getent passwd phd2-alpaca > /dev/null 2>&1; then
+            adduser --system --group \
+                --no-create-home \
+                --home /var/lib/phd2-alpaca \
+                --gecos "PHD2 Alpaca Guiding Server" \
+                phd2-alpaca
+        fi
+
+        # Create working directory for PHD2 state (logs, calibration data, profiles)
+        if [ ! -d /var/lib/phd2-alpaca ]; then
+            mkdir -p /var/lib/phd2-alpaca
+        fi
+        chown phd2-alpaca:phd2-alpaca /var/lib/phd2-alpaca
+
+        # Grant plugdev membership for USB camera/guide port access
+        if getent group plugdev > /dev/null 2>&1; then
+            usermod -aG plugdev phd2-alpaca || true
+        fi
+
+        # Grant dialout membership for serial guide port access
+        if getent group dialout > /dev/null 2>&1; then
+            usermod -aG dialout phd2-alpaca || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
