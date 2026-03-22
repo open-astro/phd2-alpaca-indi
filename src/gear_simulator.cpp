@@ -84,7 +84,6 @@ struct SimCamParams
     static bool show_comet;
     static double comet_rate_x;
     static double comet_rate_y;
-    static bool allow_async_st4;
     static unsigned int frame_download_ms;
 };
 
@@ -114,7 +113,6 @@ double SimCamParams::custom_pe_period;
 bool SimCamParams::show_comet;
 double SimCamParams::comet_rate_x;
 double SimCamParams::comet_rate_y;
-bool SimCamParams::allow_async_st4 = true;
 unsigned int SimCamParams::frame_download_ms; // frame download time, ms
 
 // Note: these are all in units appropriate for the UI
@@ -1294,9 +1292,6 @@ public:
     bool SetCoolerSetpoint(double temperature) override;
     bool GetCoolerStatus(bool *on, double *setpoint, double *power, double *temperature) override;
     bool GetSensorTemperature(double *temperature) override;
-    bool ST4HasNonGuiMove() override { return true; }
-    bool ST4SynchronousOnly() override;
-    bool ST4PulseGuideScope(int direction, int duration) override;
     PierSide SideOfPier() const;
     void FlipPierSide();
 };
@@ -1305,7 +1300,6 @@ CameraSimulator::CameraSimulator()
 {
     Connected = false;
     Name = _T("Simulator");
-    m_hasGuideOutput = true;
     HasShutter = true;
     HasGainControl = true;
     HasSubframes = true;
@@ -1512,60 +1506,6 @@ bool CameraSimulator::Capture(usImage& img, const CaptureParams& captureParams)
     return false;
 }
 
-bool CameraSimulator::ST4PulseGuideScope(int direction, int duration)
-{
-    // Following must take into account how the render_star function works.  Render_star uses camera binning explicitly, so
-    // relying only on image scale in computing d creates distances that are too small by a factor of <binning>
-    double d = SimCamParams::guide_rate * HwBinning * duration / (1000.0 * SimCamParams::image_scale);
-
-    // simulate RA motion scaling according to declination
-    if (direction == WEST || direction == EAST)
-    {
-        double dec = pPointingSource->GetDeclinationRadians();
-        if (dec == UNKNOWN_DECLINATION)
-            dec = radians(25.0); // some arbitrary declination
-        d *= cos(dec);
-    }
-
-    // simulate stiction if option selected
-    if (SimCamParams::use_stiction && (direction == NORTH || direction == SOUTH))
-        d += sim.stictionSim.GetAdjustment(direction, duration, d);
-
-    if (SimCamParams::pier_side == PIER_SIDE_WEST && SimCamParams::reverse_dec_pulse_on_west_side)
-    {
-        // after pier flip, North/South have opposite affect on declination
-        switch (direction)
-        {
-        case NORTH:
-            direction = SOUTH;
-            break;
-        case SOUTH:
-            direction = NORTH;
-            break;
-        }
-    }
-
-    switch (direction)
-    {
-    case WEST:
-        sim.ra_ofs += d;
-        break;
-    case EAST:
-        sim.ra_ofs -= d;
-        break;
-    case NORTH:
-        sim.dec_ofs.incr(d);
-        break;
-    case SOUTH:
-        sim.dec_ofs.incr(-d);
-        break;
-    default:
-        return true;
-    }
-    WorkerThread::MilliSleep(duration, WorkerThread::INT_ANY);
-    return false;
-}
-
 bool CameraSimulator::SetCoolerOn(bool on)
 {
     if (on)
@@ -1618,11 +1558,6 @@ bool CameraSimulator::GetSensorTemperature(double *temperature)
 PierSide CameraSimulator::SideOfPier() const
 {
     return SimCamParams::pier_side;
-}
-
-bool CameraSimulator::ST4SynchronousOnly()
-{
-    return !SimCamParams::allow_async_st4;
 }
 
 static PierSide OtherSide(PierSide side)
@@ -2105,7 +2040,11 @@ void GearSimulator::FlipPierSide(GuideCamera *camera)
 
 StepGuider *GearSimulator::MakeAOSimulator()
 {
+#ifdef STEPGUIDER_SIMULATOR
     return new StepGuiderSimulator();
+#else
+    return nullptr;
+#endif
 }
 
 Rotator *GearSimulator::MakeRotatorSimulator()

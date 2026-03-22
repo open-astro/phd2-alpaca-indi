@@ -796,10 +796,6 @@ static void get_current_equipment(JObj& response, const json_value *params)
     if (mount)
         devstat(t, "mount", mount->Name(), mount->IsConnected());
 
-    Mount *auxMount = pFrame->pGearDialog->AuxScope();
-    if (auxMount)
-        devstat(t, "aux_mount", auxMount->Name(), auxMount->IsConnected());
-
     Mount *ao = TheAO();
     if (ao)
         devstat(t, "AO", ao->Name(), ao->IsConnected());
@@ -889,8 +885,7 @@ static bool any_equipment_connected()
 {
     return (pCamera && pCamera->Connected) || (pMount && pMount->IsConnected()) ||
         (pSecondaryMount && pSecondaryMount->IsConnected()) || (pRotator && pRotator->IsConnected()) ||
-        (TheAO() && TheAO()->IsConnected()) ||
-        (pFrame->pGearDialog->AuxScope() && pFrame->pGearDialog->AuxScope()->IsConnected());
+        (TheAO() && TheAO()->IsConnected());
 }
 
 static wxString extract_bracketed_driver_name(const wxString& selection)
@@ -936,11 +931,9 @@ static void get_equipment_choices(JObj& response, const json_value *params)
     JObj t;
     JAry cameras = json_string_array(GuideCamera::GuideCameraList());
     JAry mounts = json_string_array(Scope::MountList());
-    JAry auxMounts = json_string_array(Scope::AuxMountList());
-    JAry aos = json_string_array(StepGuider::AOList());
     JAry rotators = json_string_array(Rotator::RotatorList());
 
-    t << NV("camera", cameras) << NV("mount", mounts) << NV("aux_mount", auxMounts) << NV("AO", aos) << NV("rotator", rotators);
+    t << NV("camera", cameras) << NV("mount", mounts) << NV("rotator", rotators);
     response << jrpc_result(t);
 }
 
@@ -1762,78 +1755,22 @@ static void set_camera_bitdepth(JObj& response, const json_value *params)
 
 static void get_selected_aux_mount(JObj& response, const json_value *params)
 {
-    response << jrpc_result(pConfig->Profile.GetString("/scope/LastAuxMenuChoice", _("None")));
+    response << jrpc_result(wxString(_("None")));
 }
 
 static void set_selected_aux_mount(JObj& response, const json_value *params)
 {
-    Params p("aux_mount", params);
-    const json_value *auxMount = p.param("aux_mount");
-    if (!auxMount || auxMount->type != JSON_STRING)
-    {
-        response << jrpc_error(JSONRPC_INVALID_PARAMS, "expected aux_mount param");
-        return;
-    }
-
-    if (any_equipment_connected())
-    {
-        response << jrpc_error(1, "cannot change aux mount selection while equipment is connected");
-        return;
-    }
-
-    wxArrayString choices = Scope::AuxMountList();
-    wxString choice;
-    if (!FindMatchingChoice(choices, auxMount->string_value, &choice))
-    {
-        response << jrpc_error(JSONRPC_INVALID_PARAMS, "invalid aux mount selection");
-        return;
-    }
-
-    pConfig->Profile.SetString("/scope/LastAuxMenuChoice", choice);
-    if (choice.Contains("INDI"))
-    {
-        wxString driverName = extract_bracketed_driver_name(choice);
-        if (!driverName.IsEmpty())
-            pConfig->Profile.SetString("/indi/INDImount", driverName);
-    }
-    pConfig->Flush();
-    apply_selection_to_control(GEAR_CHOICE_AUXSCOPE, choices, choice);
-    response << jrpc_result(0);
+    response << jrpc_error(1, "aux mount is not supported in this build");
 }
 
 static void get_selected_ao(JObj& response, const json_value *params)
 {
-    response << jrpc_result(pConfig->Profile.GetString("/stepguider/LastMenuChoice", _("None")));
+    response << jrpc_result(wxString(_("None")));
 }
 
 static void set_selected_ao(JObj& response, const json_value *params)
 {
-    Params p("ao", params);
-    const json_value *ao = p.param("ao");
-    if (!ao || ao->type != JSON_STRING)
-    {
-        response << jrpc_error(JSONRPC_INVALID_PARAMS, "expected ao param");
-        return;
-    }
-
-    if (any_equipment_connected())
-    {
-        response << jrpc_error(1, "cannot change AO selection while equipment is connected");
-        return;
-    }
-
-    wxArrayString choices = StepGuider::AOList();
-    wxString choice;
-    if (!FindMatchingChoice(choices, ao->string_value, &choice))
-    {
-        response << jrpc_error(JSONRPC_INVALID_PARAMS, "invalid AO selection");
-        return;
-    }
-
-    pConfig->Profile.SetString("/stepguider/LastMenuChoice", choice);
-    pConfig->Flush();
-    apply_selection_to_control(GEAR_CHOICE_STEPGUIDER, choices, choice);
-    response << jrpc_result(0);
+    response << jrpc_error(1, "AO is not supported in this build");
 }
 
 static void get_selected_rotator(JObj& response, const json_value *params)
@@ -1879,10 +1816,9 @@ static void set_selected_rotator(JObj& response, const json_value *params)
 
 static bool all_equipment_connected()
 {
-    Scope *auxMount = pFrame->pGearDialog ? pFrame->pGearDialog->AuxScope() : nullptr;
     StepGuider *ao = TheAO();
     return pCamera && pCamera->Connected && (!pMount || pMount->IsConnected()) &&
-        (!pSecondaryMount || pSecondaryMount->IsConnected()) && (!auxMount || auxMount->IsConnected()) &&
+        (!pSecondaryMount || pSecondaryMount->IsConnected()) &&
         (!ao || ao->IsConnected()) && (!pRotator || pRotator->IsConnected());
 }
 

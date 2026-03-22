@@ -174,7 +174,6 @@ WX_DEFINE_ARRAY_DOUBLE(double, ArrayOfDbl);
 #include "messagebox_proxy.h"
 #include "serialports.h"
 #include "parallelports.h"
-#include "onboard_st4.h"
 #include "cameras.h"
 #include "camera.h"
 #include "mount.h"

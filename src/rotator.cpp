@@ -36,19 +36,12 @@
 
 #include "gear_simulator.h"
 #include "rotator_ascom.h"
-#include "rotator_indi.h"
 #include "rotator_alpaca.h"
 
 const float Rotator::POSITION_ERROR = -999.f;
 const float Rotator::POSITION_UNKNOWN = -888.f;
 
 Rotator *pRotator;
-
-static wxString INDIRotatorName()
-{
-    wxString indirotator = pConfig->Profile.GetString("/indi/INDIrotator", wxEmptyString);
-    return indirotator.empty() ? _T("INDI Rotator") : wxString::Format("INDI Rotator [%s]", indirotator);
-}
 
 #ifdef ROTATOR_ALPACA
 static wxString AlpacaRotatorName()

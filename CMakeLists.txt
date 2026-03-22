@@ -161,11 +161,7 @@ add_subdirectory(contributions/MPI_IS_gaussian_process tmp_gaussian_process)
 #
 # Global include directories
 include_directories(${phd_src_dir})
-include_directories(${PHD_PROJECT_ROOT_DIR}/cameras)
 include_directories(${CMAKE_BINARY_DIR}/generated)
-# PROJECT_ROOT_DIR is added as in include directory file code that
-# uses: #include "cameras/some_camera.h"
-# TODO: would be better to separate cameras/ into per-camera directories
 include_directories(${PHD_PROJECT_ROOT_DIR})
 
 
@@ -179,17 +175,6 @@ if(KWIQGuider_PLATFORM_SRC)
 endif()
 
 set(cam_SRC
-  ${phd_src_dir}/cam_altair.cpp
-  ${phd_src_dir}/cam_altair.h
-  ${phd_src_dir}/cam_ascom.cpp
-  ${phd_src_dir}/cam_ascom.h
-  ${phd_src_dir}/cam_atik16.cpp
-  ${phd_src_dir}/cam_atik16.h
-  ${phd_src_dir}/cam_firewire.h
-  ${phd_src_dir}/cam_firewire_IC.cpp
-  ${phd_src_dir}/cam_firewire_OSX.cpp
-  ${phd_src_dir}/cam_indi.cpp
-  ${phd_src_dir}/cam_indi.h
   ${phd_src_dir}/cam_alpaca.cpp
   ${phd_src_dir}/cam_alpaca.h
   ${phd_src_dir}/alpaca_client.cpp
@@ -200,90 +185,11 @@ set(cam_SRC
   ${phd_src_dir}/config_alpaca.h
   ${phd_src_dir}/scope_alpaca.h
   ${phd_src_dir}/scope_alpaca.cpp
-  ${phd_src_dir}/cam_INovaPLC.cpp
-  ${phd_src_dir}/cam_INovaPLC.h
-  ${phd_src_dir}/cam_ioptron.cpp
-  ${phd_src_dir}/cam_ioptron.h
-  ${phd_src_dir}/cam_KWIQGuider.cpp
-  ${phd_src_dir}/cam_KWIQGuider.h
-  ${KWIQGuider_PLATFORM_SRC}
-  ${phd_src_dir}/cam_LEwebcam.cpp
-  ${phd_src_dir}/cam_MeadeDSI.cpp
-  ${phd_src_dir}/cam_MeadeDSI.h
-  ${phd_src_dir}/cam_moravian.cpp
-  ${phd_src_dir}/cam_moravian.h
-  ${phd_src_dir}/cam_NebSBIG.cpp
-  ${phd_src_dir}/cam_NebSBIG.h
-  ${phd_src_dir}/cam_ogma.cpp
-  ${phd_src_dir}/cam_ogma.h
-  ${phd_src_dir}/cam_opencv.cpp
-  ${phd_src_dir}/cam_opencv.h
-  ${phd_src_dir}/cam_openssag.cpp
-  ${phd_src_dir}/cam_openssag.h
-  ${phd_src_dir}/cam_OSPL130.cpp
-  ${phd_src_dir}/cam_OSPL130.h
-  ${phd_src_dir}/cam_playerone.cpp
-  ${phd_src_dir}/cam_playerone.h
-  ${phd_src_dir}/cam_qguide.cpp
-  ${phd_src_dir}/cam_qguide.h
-  ${phd_src_dir}/cam_qhy.cpp
-  ${phd_src_dir}/cam_qhy.h
-  ${phd_src_dir}/cam_sbig.cpp
-  ${phd_src_dir}/cam_sbig.h
-  ${phd_src_dir}/cam_sbigrotator.cpp
-  ${phd_src_dir}/cam_sbigrotator.h
-  ${phd_src_dir}/cam_skyraider.cpp
-  ${phd_src_dir}/cam_skyraider.h
-  ${phd_src_dir}/cam_sspiag.cpp
-  ${phd_src_dir}/cam_sspiag.h
-  ${phd_src_dir}/cam_starfish.cpp
-  ${phd_src_dir}/cam_starfish.h
-  ${phd_src_dir}/cam_StarShootDSCI.cpp
-  ${phd_src_dir}/cam_StarShootDSCI.h
-  ${phd_src_dir}/cam_svb.cpp
-  ${phd_src_dir}/cam_svb.h
-  ${phd_src_dir}/cam_sxv.cpp
-  ${phd_src_dir}/cam_sxv.h
-  ${SXV_PLATFORM_SRC}
-  ${phd_src_dir}/cam_touptek.cpp
-  ${phd_src_dir}/cam_touptek.h
-  ${phd_src_dir}/cam_vfw.cpp
-  ${phd_src_dir}/cam_vfw.h
-  ${phd_src_dir}/cam_wdm_base.h
-  ${phd_src_dir}/cam_wdm.cpp
-  ${phd_src_dir}/cam_wdm.h
-  ${phd_src_dir}/cam_zwo.cpp
-  ${phd_src_dir}/cam_zwo.h
 
   ${phd_src_dir}/camera.cpp
   ${phd_src_dir}/camera.h
   ${phd_src_dir}/cameras.h
 )
-
-# windows specific cameras
-if(WIN32)
-  list(APPEND cam_SRC
-    ${phd_src_dir}/cam_LEParallelWebcam.cpp
-    ${phd_src_dir}/cam_LEParallelWebcam.h
-    ${phd_src_dir}/cam_LESerialWebcam.cpp
-    ${phd_src_dir}/cam_LESerialWebcam.h
-    ${phd_src_dir}/cam_LELXUSBWebcam.cpp
-    ${phd_src_dir}/cam_LELXUSBWebcam.h
-
-    ${phd_src_dir}/cam_atik16.cpp
-    ${phd_src_dir}/cam_atik16.h
-
-    ${PHD_PROJECT_ROOT_DIR}/cameras/ArtemisHSCAPI.h
-    ${PHD_PROJECT_ROOT_DIR}/cameras/ArtemisHSCAPI.cpp
-  )
-elseif(UNIX AND (NOT APPLE))
-  list(APPEND cam_SRC
-      ${phd_src_dir}/cam_qhy5.h
-      ${phd_src_dir}/cam_qhy5.cpp
-     )
-elseif(APPLE)
-  # nothing else to add for Mac
-endif()
 
 source_group(Cameras FILES ${cam_SRC})
 
@@ -306,23 +212,9 @@ set(scopes_SRC
   ${phd_src_dir}/scope_gpusb.h
   ${phd_src_dir}/scope_manual_pointing.cpp
   ${phd_src_dir}/scope_manual_pointing.h
-  ${phd_src_dir}/scope_onboard_st4.cpp
-  ${phd_src_dir}/scope_onboard_st4.h
-  ${phd_src_dir}/scope_oncamera.cpp
-  ${phd_src_dir}/scope_oncamera.h
-  ${phd_src_dir}/scope_onstepguider.cpp
-  ${phd_src_dir}/scope_onstepguider.h
   ${phd_src_dir}/scope_voyager.cpp
   ${phd_src_dir}/scope_voyager.h
-  ${phd_src_dir}/scope_indi.h
-  ${phd_src_dir}/scope_indi.cpp
   ${phd_src_dir}/scopes.h
-  ${phd_src_dir}/stepguider_sxao.cpp
-  ${phd_src_dir}/stepguider_sxao.h
-  ${phd_src_dir}/stepguider_sxao_indi.cpp
-  ${phd_src_dir}/stepguider_sxao_indi.h
-  ${phd_src_dir}/stepguider_sbigao_indi.cpp
-  ${phd_src_dir}/stepguider_sbigao_indi.h
   ${phd_src_dir}/stepguider.cpp
   ${phd_src_dir}/stepguider.h
   ${phd_src_dir}/stepguiders.h
@@ -381,8 +273,6 @@ set(phd2_SRC
   ${phd_src_dir}/comet_tool.cpp
   ${phd_src_dir}/comet_tool.h
 
-  ${phd_src_dir}/config_indi.cpp
-  ${phd_src_dir}/config_indi.h
   ${phd_src_dir}/configdialog.cpp
   ${phd_src_dir}/configdialog.h
   ${phd_src_dir}/confirm_dialog.cpp
@@ -418,8 +308,6 @@ set(phd2_SRC
   ${phd_src_dir}/image_math.h
   ${phd_src_dir}/imagelogger.cpp
   ${phd_src_dir}/imagelogger.h
-  ${phd_src_dir}/indi_gui.cpp
-  ${phd_src_dir}/indi_gui.h
   ${phd_src_dir}/json_parser.cpp
   ${phd_src_dir}/json_parser.h
   ${phd_src_dir}/logger.cpp
@@ -435,8 +323,6 @@ set(phd2_SRC
   ${phd_src_dir}/myframe_events.cpp
   ${phd_src_dir}/nudge_lock.cpp
   ${phd_src_dir}/nudge_lock.h
-  ${phd_src_dir}/onboard_st4.cpp
-  ${phd_src_dir}/onboard_st4.h
   ${phd_src_dir}/optionsbutton.cpp
   ${phd_src_dir}/optionsbutton.h
   ${phd_src_dir}/phd.cpp
@@ -466,9 +352,6 @@ set(phd2_SRC
 
   ${phd_src_dir}/rotator_ascom.cpp
   ${phd_src_dir}/rotator_ascom.h
-
-  ${phd_src_dir}/rotator_indi.cpp
-  ${phd_src_dir}/rotator_indi.h
 
   ${phd_src_dir}/rotator_alpaca.cpp
   ${phd_src_dir}/rotator_alpaca.h
@@ -621,135 +504,7 @@ if(APPLE)
       MACOSX_PACKAGE_LOCATION MacOS
   )
 
-  # this is a workaround to what looks like a bug on cmake for Makefile generators
-  if(NOT "${CMAKE_GENERATOR}" STREQUAL "Xcode")
-    if(sbigudFramework)
-      get_filename_component(frameworkfn ${sbigudFramework} NAME)
-      add_custom_command(
-        TARGET phd2
-        POST_BUILD
-        # cannot use copy_directory as it kills the symlinks
-        COMMAND mkdir -p $<TARGET_FILE_DIR:phd2>/../Frameworks/
-        COMMAND rm -rf $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-        COMMAND cp -R ${sbigudFramework} $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-      )
-    endif()
-    if(fcCamFramework)
-      get_filename_component(frameworkfn ${fcCamFramework} NAME)
-      add_custom_command(
-        TARGET phd2
-        POST_BUILD
-        # cannot use copy_directory as it kills the symlinks
-        COMMAND mkdir -p $<TARGET_FILE_DIR:phd2>/../Frameworks/
-        COMMAND rm -rf $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-        COMMAND cp -R ${fcCamFramework} $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-      )
-    endif()
-    if(mallincamFramework)
-      get_filename_component(frameworkfn ${mallincamFramework} NAME)
-      add_custom_command(
-        TARGET phd2
-        POST_BUILD
-        # cannot use copy_directory as it kills the symlinks
-        COMMAND mkdir -p $<TARGET_FILE_DIR:phd2>/../Frameworks/
-        COMMAND rm -rf $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-        COMMAND cp -R ${mallincamFramework} $<TARGET_FILE_DIR:phd2>/../Frameworks/${frameworkfn}
-      )
-    endif()
-  else()
-    set_source_files_properties(${sbigudFramework} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    if(fcCamFramework)
-      set_source_files_properties(${fcCamFramework}  PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    endif()
-    if(mallincamFramework)
-      set_source_files_properties(${mallincamFramework} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    endif()
-  endif()
-
-  if(asiCamera2)
-    set_source_files_properties(${asiCamera2} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    # there's got to be a better way, but damfino. This works though.
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change @loader_path/libASICamera2.dylib
-                   @executable_path/../Frameworks/libASICamera2.dylib $<TARGET_FILE:phd2>
-      COMMAND install_name_tool -change @loader_path/libusb-1.0.0.dylib
-                   @executable_path/../Frameworks/libusb_openphd.dylib
-                   $<TARGET_FILE_DIR:phd2>/../Frameworks/libASICamera2.dylib
-      COMMENT "Updating dylib path for libASICamera2.dylib"
-    )
-  endif()
-
-  if(qhylib)
-    set_source_files_properties(${qhylib} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    # there's got to be a better way, but damfino. This works though.
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change @rpath/libqhyccd.20.dylib
-                   @executable_path/../Frameworks/libqhyccd.dylib $<TARGET_FILE:phd2>
-      COMMAND install_name_tool -change /usr/local/lib/libusb-1.0.0.dylib
-                   @executable_path/../Frameworks/libusb_openphd.dylib
-                   $<TARGET_FILE_DIR:phd2>/../Frameworks/libqhyccd.dylib
-      COMMAND install_name_tool -change @loader_path/libusb-1.0.dylib
-                   @executable_path/../Frameworks/libusb_openphd.dylib
-                   $<TARGET_FILE_DIR:phd2>/../Frameworks/libqhyccd.dylib
-      COMMENT "Updating dylib path for libqhyccd.dylib"
-    )
-  endif()
-
-  if(toupcam)
-    set_source_files_properties(${toupcam} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    # there's got to be a better way, but damfino. This works though.
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change @rpath/libtoupcam.dylib
-                   @executable_path/../Frameworks/libtoupcam.dylib $<TARGET_FILE:phd2>
-      COMMENT "Updating dylib path for libtoupcam.dylib"
-    )
-  endif()
-
-  if(ogmacam)
-    set_source_files_properties(${ogmacam} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    # there's got to be a better way, but damfino. This works though.
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change @rpath/libogmacam.dylib
-                   @executable_path/../Frameworks/libogmacam.dylib $<TARGET_FILE:phd2>
-      COMMENT "Updating dylib path for libogmacam.dylib"
-    )
-  endif()
-
-  if(SVBCameraSDK)
-    set_source_files_properties(${SVBCameraSDK} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change @rpath/libSVBCameraSDK.dylib
-                   @executable_path/../Frameworks/libSVBCameraSDK.dylib $<TARGET_FILE:phd2>
-      COMMAND install_name_tool -change @rpath/libusb-1.0.0.dylib
-                   @executable_path/../Frameworks/libusb_openphd.dylib
-                   $<TARGET_FILE_DIR:phd2>/../Frameworks/libSVBCameraSDK.dylib
-      COMMENT "Updating dylib path for libSVBCameraSDK.dylib"
-    )
-  endif()
-
-  if(playerone)
-    set_source_files_properties(${playerone} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-    add_custom_command(
-      TARGET phd2
-      POST_BUILD
-      COMMAND install_name_tool -change libPlayerOneCamera.3.dylib
-                   @executable_path/../Frameworks/libPlayerOneCamera.dylib $<TARGET_FILE:phd2>
-      COMMAND install_name_tool -change @rpath/libusb-1.0.0.dylib
-                   @executable_path/../Frameworks/libusb_openphd.dylib
-                   $<TARGET_FILE_DIR:phd2>/../Frameworks/libPlayerOneCamera.dylib
-      COMMENT "Updating dylib path for libPlayerOneCamera.dylib"
-    )
-  endif()
+  # Camera-specific frameworks removed - Alpaca only build
 
   add_custom_command(
     TARGET phd2
@@ -786,7 +541,7 @@ elseif(WIN32)
     phd2
     PROPERTIES
       OUTPUT_NAME phd2  # lower case on Win32
-      LINK_FLAGS "/DELAYLOAD:sbigudrv.dll /NODEFAULTLIB:libcmt.lib" #  /NODEFAULTLIB:libcmtd.lib
+      LINK_FLAGS "/NODEFAULTLIB:libcmt.lib" #  /NODEFAULTLIB:libcmtd.lib
       LINK_FLAGS_DEBUG "/NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrt.lib"
   )
 
