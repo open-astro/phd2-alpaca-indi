@@ -327,12 +327,6 @@ static int CompareNoCase(const wxString& first, const wxString& second)
     return first.CmpNoCase(second);
 }
 
-static wxString INDIMountName()
-{
-    wxString val = pConfig->Profile.GetString("/indi/INDImount", wxEmptyString);
-    return val.empty() ? _("INDI Mount") : wxString::Format(_("INDI Mount [%s]"), val);
-}
-
 static wxString AlpacaMountName()
 {
     wxString host = pConfig->Profile.GetString("/alpaca/host", wxEmptyString);
@@ -350,12 +344,6 @@ wxArrayString Scope::MountList()
     wxArrayString ascomScopes = ScopeASCOM::EnumAscomScopes();
     for (unsigned int i = 0; i < ascomScopes.Count(); i++)
         ScopeList.Add(ascomScopes[i]);
-#endif
-#ifdef GUIDE_ONCAMERA
-    ScopeList.Add(_T("On-camera"));
-#endif
-#ifdef GUIDE_ONSTEPGUIDER
-    ScopeList.Add(_T("On-AO"));
 #endif
 #ifdef GUIDE_GPUSB
     ScopeList.Add(_T("GPUSB"));
@@ -385,30 +373,6 @@ wxArrayString Scope::MountList()
     ScopeList.Sort(&CompareNoCase);
 
     return ScopeList;
-}
-
-wxArrayString Scope::AuxMountList()
-{
-    wxArrayString scopeList;
-    scopeList.Add(_("None")); // Keep this at the top of the list
-
-#ifdef GUIDE_ASCOM
-    wxArrayString positionAwareScopes = ScopeASCOM::EnumAscomScopes();
-    positionAwareScopes.Sort(&CompareNoCase);
-    for (unsigned int i = 0; i < positionAwareScopes.Count(); i++)
-        scopeList.Add(positionAwareScopes[i]);
-#endif
-
-#ifdef GUIDE_INDI
-    scopeList.Add(INDIMountName());
-#endif
-#ifdef GUIDE_ALPACA
-    scopeList.Add(AlpacaMountName());
-#endif
-
-    scopeList.Add(ScopeManualPointing::GetDisplayName());
-
-    return scopeList;
 }
 
 Scope *Scope::Factory(const wxString& choice)
@@ -442,14 +406,6 @@ Scope *Scope::Factory(const wxString& choice)
 #endif
         else if (choice == _("None"))
             pReturn = nullptr;
-#ifdef GUIDE_ONCAMERA
-        else if (choice == _T("On-camera"))
-            pReturn = new ScopeOnCamera();
-#endif
-#ifdef GUIDE_ONSTEPGUIDER
-        else if (choice == _T("On-AO"))
-            pReturn = new ScopeOnStepGuider();
-#endif
 #ifdef GUIDE_GPUSB
         else if (choice.Contains(_T("GPUSB")))
             pReturn = new ScopeGpUsb();
@@ -506,16 +462,6 @@ Scope *Scope::Factory(const wxString& choice)
     }
 
     return pReturn;
-}
-
-bool Scope::RequiresCamera()
-{
-    return false;
-}
-
-bool Scope::RequiresStepGuider()
-{
-    return false;
 }
 
 bool Scope::CalibrationFlipRequiresDecFlip()

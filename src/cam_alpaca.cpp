@@ -1232,75 +1232,6 @@ bool CameraAlpaca::Capture(usImage& img, const CaptureParams& captureParams)
     return false;
 }
 
-bool CameraAlpaca::ST4PulseGuideScope(int direction, int duration)
-{
-    if (!m_hasGuideOutput)
-        return true;
-
-    if (!pMount || !pMount->IsConnected())
-        return false;
-
-    // Start the motion (which may stop on its own)
-    int alpacaDirection = -1;
-    switch (direction)
-    {
-    case NORTH:
-        alpacaDirection = 0;
-        break;
-    case SOUTH:
-        alpacaDirection = 1;
-        break;
-    case EAST:
-        alpacaDirection = 2;
-        break;
-    case WEST:
-        alpacaDirection = 3;
-        break;
-    default:
-        return true;
-    }
-
-    wxString endpoint = wxString::Format("camera/%ld/pulseguide", m_deviceNumber);
-    wxString params = wxString::Format("Direction=%d&Duration=%d", alpacaDirection, duration);
-
-    long errorCode = 0;
-    if (!m_client->PutAction(endpoint, "PulseGuide", params, &errorCode))
-    {
-        Debug.Write(wxString::Format("Alpaca Camera: PulseGuide failed, HTTP %ld\n", errorCode));
-        return true;
-    }
-
-    MountWatchdog watchdog(duration, 5000);
-
-    if (watchdog.Time() < duration) // likely returned right away and not after move - enter poll loop
-    {
-        while (true)
-        {
-            wxString isPulseGuidingEndpoint = wxString::Format("camera/%ld/ispulseguiding", m_deviceNumber);
-            bool isMoving = false;
-            long errorCode = 0;
-            if (!m_client->GetBool(isPulseGuidingEndpoint, &isMoving, &errorCode))
-            {
-                Debug.Write(wxString::Format("Alpaca Camera: IsPulseGuiding failed, HTTP %ld\n", errorCode));
-                pFrame->Alert(_("Alpaca driver failed checking IsPulseGuiding. See the debug log for more information."));
-                return true;
-            }
-            if (!isMoving)
-                break;
-            wxMilliSleep(50);
-            if (WorkerThread::TerminateRequested())
-                return true;
-            if (watchdog.Expired())
-            {
-                Debug.Write("Mount watchdog timed-out waiting for Alpaca_IsPulseGuiding to clear\n");
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 bool CameraAlpaca::SetCoolerOn(bool on)
 {
     if (!HasCooler)
@@ -1424,11 +1355,6 @@ bool CameraAlpaca::GetSensorTemperature(double *temperature)
     *temperature = ccdTemp;
 
     return false;
-}
-
-bool CameraAlpaca::ST4HasNonGuiMove()
-{
-    return true;
 }
 
 GuideCamera *AlpacaCameraFactory::MakeAlpacaCamera()

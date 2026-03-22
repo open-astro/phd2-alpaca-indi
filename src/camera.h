@@ -124,7 +124,7 @@ struct CaptureParams
 // mapping from combined binning to (hwBinning, swBinning) pair
 typedef std::map<int, std::pair<int, int>> BinningChoices;
 
-class GuideCamera : public wxMessageBoxProxy, public OnboardST4
+class GuideCamera : public wxMessageBoxProxy
 {
     friend class CameraConfigDialogPane;
     friend class CameraConfigDialogCtrlSet;
@@ -199,11 +199,6 @@ public:
     virtual bool Connect(const wxString& cameraId) = 0;
     virtual bool Disconnect() = 0; // Disconnects, unloading any DLLs loaded by Connect
     virtual void InitCapture(); // Gets run at the start of any loop (e.g., reset stream, set gain, etc).
-
-    virtual bool ST4HasGuideOutput();
-    virtual bool ST4HostConnected();
-    virtual bool ST4HasNonGuiMove();
-    virtual bool ST4PulseGuideScope(int direction, int duration);
 
     CameraConfigDialogPane *GetConfigDialogPane(wxWindow *pParent);
     CameraConfigDialogCtrlSet *GetConfigDlgCtrlSet(wxWindow *pParent, GuideCamera *pCamera, AdvancedDialog *pAdvancedDialog,

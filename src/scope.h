@@ -225,7 +225,6 @@ public:
     wxString GetMountClassName() const override;
 
     static wxArrayString MountList();
-    static wxArrayString AuxMountList();
     static Scope *Factory(const wxString& choice);
 
     Scope();
@@ -243,8 +242,6 @@ public:
     void EnableDecCompensation(bool enable);
     bool DecCompensationEnabled() const override;
 
-    virtual bool RequiresCamera();
-    virtual bool RequiresStepGuider();
     bool CalibrationFlipRequiresDecFlip() override;
     bool HasHPEncoders() const override;
     void SetCalibrationFlipRequiresDecFlip(bool val);

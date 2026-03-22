@@ -121,8 +121,8 @@ private:
     wxArrayString m_cameraNames;
     wxString m_SelectedMount;
     bool m_PositionAware;
-    wxString m_SelectedAuxMount;
-    wxString m_SelectedAO;
+    wxString m_SelectedAuxMount; // always "None" - aux mount removed
+    wxString m_SelectedAO; // always "None" - AO removed
     wxString m_SelectedRotator;
     int m_FocalLength;
     double m_GuideSpeed;
@@ -153,7 +153,6 @@ private:
     DialogState m_State;
     bool m_useCamera;
     bool m_useMount;
-    bool m_useAuxMount;
     bool m_autoRestore;
     wxArrayString m_hwBinningChoices;
     wxArrayString m_allBinningChoices;
@@ -222,7 +221,7 @@ static void AddCellPair(wxWindow *parent, wxGridBagSizer *gbs, int row, const wx
 
 ProfileWizard::ProfileWizard(wxWindow *parent, bool showGreeting)
     : wxDialog(parent, wxID_ANY, _("New Profile Wizard"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX),
-      m_useCamera(false), m_useMount(false), m_useAuxMount(false), m_autoRestore(false), m_launchDarks(true),
+      m_useCamera(false), m_useMount(false), m_autoRestore(false), m_launchDarks(true),
       m_camDeviceId(GuideCamera::DEFAULT_CAMERA_ID)
 {
     TitlePrefix = _("New Profile Wizard - ");
@@ -500,10 +499,6 @@ void ProfileWizard::ShowHelp(DialogState state)
         }
         break;
     case STATE_AO:
-        hText = _("If you have an adaptive optics (AO) device, you can select it here.  The AO device will be used for high "
-                  "speed, small guiding corrections, "
-                  "while the mount interface you chose earlier will be used for larger ('bump') corrections. Calibration of "
-                  "both interfaces will be handled automatically.");
         break;
     case STATE_ROTATOR:
         hText = _("If you have a rotator device that rotates the guide camera or OAG, you can select it here. This will "
@@ -573,9 +568,8 @@ ConfigSuggestionDlg::ConfigSuggestionDlg(ConfigWarningTypes Type, wxHyperlinkCtr
     if (Type == eNoPointingInfo)
         msg = _("This configuration doesn't provide PHD2 with any information about the scope's pointing position.  This means "
                 "you will need to recalibrate\n"
-                "whenever the scope is slewed, and some PHD2 features will be disabled.  You should choose an ASCOM or INDI "
-                "mount connection\n"
-                "for either 'mount' or 'aux-mount' unless there are no drivers available for your mount.\n"
+                "whenever the scope is slewed, and some PHD2 features will be disabled.  You should choose an Alpaca "
+                "mount connection unless there are no drivers available for your mount.\n"
                 "Please review the Help guide on 'Equipment Connections' for more details.");
     else if (Type == eEQModMount)
     {
@@ -667,13 +661,20 @@ bool ProfileWizard::SemanticCheck(DialogState state, int change)
         case STATE_GREETINGS:
             break;
         case STATE_CAMERA:
-            bOk = (m_SelectedCamera.length() > 0 && m_PixelSize > 0 && m_FocalLength > 0 && m_SelectedCamera != _("None"));
-            if (!bOk)
-                ShowStatus(_("Specify camera, guider focal length, and guide camera pixel size"));
+            if (m_SelectedCamera == _("None"))
+            {
+                bOk = true;
+            }
+            else
+            {
+                bOk = (m_SelectedCamera.length() > 0 && m_PixelSize > 0 && m_FocalLength > 0);
+                if (!bOk)
+                    ShowStatus(_("Specify camera, guider focal length, and guide camera pixel size"));
+            }
             break;
         case STATE_MOUNT:
-            bOk = (m_SelectedMount.Length() > 0 && m_SelectedMount != _("None"));
-            if (bOk)
+            bOk = (m_SelectedMount.Length() > 0);
+            if (bOk && m_SelectedMount != _("None"))
             {
                 // Check for absence of pointing info
                 if (m_SelectedMount.Upper().Contains("EQMOD")) //  && !m_PositionAware && WarningAllowed(eNoPointingInfo))
@@ -698,26 +699,7 @@ bool ProfileWizard::SemanticCheck(DialogState state, int change)
                 ShowStatus(_("Select a mount type to handle guide commands"));
             break;
         case STATE_AUXMOUNT:
-        {
-            // Check for absence of pointing info
-            if (m_SelectedAuxMount == _("None") && !m_PositionAware && WarningAllowed(eNoPointingInfo))
-            {
-                ConfigSuggestionDlg userAlert(eNoPointingInfo, m_EqLink);
-                int userRspns = userAlert.ShowModal();
-                if (userRspns == wxOK)
-                {
-                    // Could be either 'proceed' or 'dontAsk'
-                    if (userAlert.UserChoice == eDontAsk)
-                    {
-                        BlockWarning(eNoPointingInfo);
-                    }
-                    bOk = true;
-                }
-                else
-                    bOk = false;
-            }
-        }
-        break;
+            break;
         case STATE_AO:
             break;
         case STATE_ROTATOR:
@@ -826,41 +808,13 @@ void ProfileWizard::UpdateState(const int change)
             m_pDeviceId->Show(false);
             break;
         case STATE_AUXMOUNT:
+            // Aux mount support removed - skip this state
             m_pMountProperties->Show(false);
-            if (m_PositionAware) // Skip this state if the selected mount is already position aware
-            {
-                UpdateState(change);
-            }
-            else
-            {
-                SetTitle(TitlePrefix + _("Choose an Auxiliary Mount Connection (optional)"));
-                m_pGearLabel->SetLabel(_("Aux Mount:"));
-                m_pGearChoice->Clear();
-                m_pGearChoice->Append(Scope::AuxMountList());
-                m_pGearChoice->SetStringSelection(m_SelectedAuxMount); // SelectedAuxMount is never null
-                m_pInstructions->SetLabel(_("Since your primary mount connection does not report pointing position, you may "
-                                            "want to choose an 'Aux Mount' connection"));
-            }
-            m_pDeviceLabel->Show(false);
-            m_pDeviceId->Show(false);
+            UpdateState(change);
             break;
         case STATE_AO:
-            SetTitle(TitlePrefix + _("Choose an Adaptive Optics Device (optional)"));
-            m_pGearLabel->SetLabel(_("AO:"));
-            m_pGearChoice->Clear();
-            m_pGearChoice->Append(StepGuider::AOList());
-            m_pGearChoice->SetStringSelection(m_SelectedAO); // SelectedAO is never null
-            m_pInstructions->SetLabel(_("Specify your adaptive optics device if desired"));
-            if (change == -1) // User is backing up in wizard dialog
-            {
-                // Assert UI state for gear selection
-                m_pGearGrid->Show(true);
-                m_pNextBtn->SetLabel(_("Next >"));
-                m_pNextBtn->SetToolTip(_("Move forward to next screen"));
-                m_pWrapUp->Show(false);
-            }
-            m_pDeviceLabel->Show(false);
-            m_pDeviceId->Show(false);
+            // AO support removed - skip this state
+            UpdateState(change);
             break;
         case STATE_ROTATOR:
             SetTitle(TitlePrefix + _("Choose a Rotator Device (optional)"));
@@ -889,7 +843,7 @@ void ProfileWizard::UpdateState(const int change)
             m_pLaunchDarks->SetValue(m_useCamera || m_launchDarks);
             m_pInstructions->SetLabel(
                 _("Enter a name for your profile and optionally launch the process to build a dark library"));
-            m_pAutoRestore->Show(m_PositionAware || m_SelectedAuxMount != _("None"));
+            m_pAutoRestore->Show(m_PositionAware);
             m_pAutoRestore->SetValue(m_autoRestore);
             SetSizerAndFit(m_pvSizer);
             break;
@@ -1228,55 +1182,9 @@ void ProfileWizard::OnGearChoice(wxCommandEvent& evt)
     }
 
     case STATE_AUXMOUNT:
-    {
-        ShowStatus(wxEmptyString);
-        wxString prevSelection = m_SelectedAuxMount;
-        m_SelectedAuxMount = m_pGearChoice->GetStringSelection();
-        std::unique_ptr<Scope> scope(Scope::Factory(m_SelectedAuxMount));
-        // Handle setting of guide speed behind the scenes using aux-mount
-        if (prevSelection != m_SelectedAuxMount)
-        {
-            if (m_SelectedAuxMount != _("None") && !m_SelectedAuxMount.Contains(_("Ask")))
-            {
-                ConnectDialog cnDlg(this, STATE_AUXMOUNT);
-                int answer = cnDlg.ShowModal();
-                if (answer == wxYES)
-                {
-                    m_useAuxMount = true;
-                }
-                else if (answer == wxNO)
-                {
-                    m_useAuxMount = false;
-                }
-                else if (answer == wxCANCEL)
-                {
-                    m_SelectedAuxMount = _("None");
-                    UpdateState(0);
-                    return;
-                }
-            }
-            else
-                m_useAuxMount = false;
-        }
-
-        if (prevSelection != m_SelectedAuxMount)
-        {
-            if (m_useAuxMount)
-            {
-                double oldGuideSpeed = m_pGuideSpeed->GetValue();
-                InitMountProps(scope.get());
-                if (oldGuideSpeed != m_pGuideSpeed->GetValue())
-                    ShowStatus(wxString::Format(_("Guide speed setting adjusted from %0.1f to %0.1fx"), oldGuideSpeed,
-                                                m_pGuideSpeed->GetValue()));
-            }
-            else
-                InitMountProps(nullptr);
-        }
         break;
-    }
 
     case STATE_AO:
-        m_SelectedAO = m_pGearChoice->GetStringSelection();
         break;
     case STATE_ROTATOR:
         m_SelectedRotator = m_pGearChoice->GetStringSelection();
@@ -1597,14 +1505,6 @@ ConnectDialog::ConnectDialog(ProfileWizard *parent, ProfileWizard::DialogState c
         this->SetTitle(_("Mount Already Connected?"));
         break;
     case ProfileWizard::STATE_AUXMOUNT:
-        m_Instructions->SetLabelText(wxString::Format(_("Is the aux-mount already connected and set up to communicate with "
-                                                        "PHD2?  If so, PHD2 can determine the mount guide speed automatically. "
-                                                        " If not, you can enter it manually.  If you don't know what it is, "
-                                                        "just leave the setting at the default value of %0.1fx. "
-                                                        " If the guide speed on the previous page doesn't match what is read "
-                                                        "from the mount, the mount value will be used."),
-                                                      Scope::DEFAULT_MOUNT_GUIDE_SPEED));
-        this->SetTitle(_("Aux-mount Already Connected?"));
         break;
     default:
         break;

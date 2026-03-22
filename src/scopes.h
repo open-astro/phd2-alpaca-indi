@@ -37,23 +37,17 @@
 
 #if defined(__WINDOWS__)
 
-# define GUIDE_ONCAMERA
-# define GUIDE_ONSTEPGUIDER
 # define GUIDE_ASCOM
 # ifdef HAVE_SHOESTRING
 #  define GUIDE_GPUSB
 #  define GUIDE_GPINT
 # endif
-# define GUIDE_INDI
 # define GUIDE_ALPACA
 
 #elif defined(__APPLE__)
 
-# define GUIDE_ONCAMERA
-# define GUIDE_ONSTEPGUIDER
 # define GUIDE_GPUSB
 # define GUIDE_GCUSBST4
-# define GUIDE_INDI
 # define GUIDE_EQUINOX
 // #define GUIDE_VOYAGER
 // #define GUIDE_NEB
@@ -61,16 +55,11 @@
 
 #elif defined(__linux__) || defined(__FreeBSD__)
 
-# define GUIDE_ONCAMERA
-# define GUIDE_ONSTEPGUIDER
-# define GUIDE_INDI
 # define GUIDE_ALPACA
 
 #endif // WINDOWS/APPLE/LINUX
 
 #include "scope.h"
-#include "scope_oncamera.h"
-#include "scope_onstepguider.h"
 #include "scope_ascom.h"
 #include "scope_gpusb.h"
 #include "scope_gpint.h"
@@ -78,7 +67,6 @@
 #include "scope_equinox.h"
 #include "scope_eqmac.h"
 #include "scope_GC_USBST4.h"
-#include "scope_indi.h"
 #include "scope_alpaca.h"
 #include "scope_manual_pointing.h"
 

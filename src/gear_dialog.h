@@ -41,13 +41,10 @@ class GearDialog : public wxDialog
 {
     GuideCamera *m_pCamera;
     Scope *m_pScope;
-    Scope *m_pAuxScope;
-    StepGuider *m_pStepGuider;
     Rotator *m_pRotator;
 
     bool m_cameraUpdated;
     bool m_mountUpdated;
-    bool m_stepGuiderUpdated;
     bool m_rotatorUpdated;
     bool m_showDarksDialog;
     bool m_ascomScopeSelected;
@@ -71,17 +68,6 @@ class GearDialog : public wxDialog
     wxChoice *m_pScopes;
     wxButton *m_pSetupScopeButton;
     wxToggleButton *m_pConnectScopeButton;
-
-    wxChoice *m_pAuxScopes;
-    wxButton *m_pSetupAuxScopeButton;
-    wxToggleButton *m_pConnectAuxScopeButton;
-
-    wxButton *m_moreButton;
-    bool m_showMoreGear;
-
-    wxChoice *m_pStepGuiders;
-    wxButton *m_pSetupStepGuiderButton;
-    wxToggleButton *m_pConnectStepGuiderButton;
 
     wxChoice *m_pRotators;
     wxButton *m_pSetupRotatorButton;
@@ -108,7 +94,6 @@ public:
     void Shutdown(bool forced);
     bool IsEmptyProfile();
     bool ReconnectCamera();
-    Scope *AuxScope() const;
     wxString SelectedCameraId() const;
     static wxString CameraSelectionKey(const wxString& camName);
 
@@ -118,8 +103,6 @@ private:
 
     void UpdateCameraButtonState();
     void UpdateScopeButtonState();
-    void UpdateAuxScopeButtonState();
-    void UpdateStepGuiderButtonState();
     void UpdateRotatorButtonState();
     void UpdateConnectAllButtonState();
     void UpdateDisconnectAllButtonState();
@@ -153,19 +136,6 @@ private:
     void OnButtonConnectScope(wxCommandEvent& event);
     void OnButtonDisconnectScope(wxCommandEvent& event);
 
-    void OnChoiceAuxScope(wxCommandEvent& event);
-    void OnButtonSetupAuxScope(wxCommandEvent& event);
-    void OnButtonConnectAuxScope(wxCommandEvent& event);
-    void OnButtonDisconnectAuxScope(wxCommandEvent& event);
-
-    void OnButtonMore(wxCommandEvent& event);
-    void ShowMoreGear();
-
-    void OnChoiceStepGuider(wxCommandEvent& event);
-    void OnButtonSetupStepGuider(wxCommandEvent& event);
-    void OnButtonConnectStepGuider(wxCommandEvent& event);
-    void OnButtonDisconnectStepGuider(wxCommandEvent& event);
-
     void OnChoiceRotator(wxCommandEvent& event);
     void OnButtonSetupRotator(wxCommandEvent& event);
     void OnButtonConnectRotator(wxCommandEvent& event);
@@ -175,10 +145,5 @@ private:
 
     wxDECLARE_EVENT_TABLE();
 };
-
-inline Scope *GearDialog::AuxScope() const
-{
-    return m_pAuxScope;
-}
 
 #endif // GEAR_DIALOG_H_INCLUDED

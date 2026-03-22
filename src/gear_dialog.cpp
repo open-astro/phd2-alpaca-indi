@@ -65,18 +65,6 @@ wxBEGIN_EVENT_TABLE(GearDialog, wxDialog)
     EVT_TOGGLEBUTTON(GEAR_BUTTON_CONNECT_SCOPE, GearDialog::OnButtonConnectScope)
     EVT_TOGGLEBUTTON(GEAR_BUTTON_DISCONNECT_SCOPE, GearDialog::OnButtonDisconnectScope)
 
-    EVT_CHOICE(GEAR_CHOICE_AUXSCOPE, GearDialog::OnChoiceAuxScope)
-    EVT_BUTTON(GEAR_BUTTON_SETUP_AUXSCOPE, GearDialog::OnButtonSetupAuxScope)
-    EVT_TOGGLEBUTTON(GEAR_BUTTON_CONNECT_AUXSCOPE, GearDialog::OnButtonConnectAuxScope)
-    EVT_TOGGLEBUTTON(GEAR_BUTTON_DISCONNECT_AUXSCOPE, GearDialog::OnButtonDisconnectAuxScope)
-
-    EVT_BUTTON(GEAR_BUTTON_MORE, GearDialog::OnButtonMore)
-
-    EVT_CHOICE(GEAR_CHOICE_STEPGUIDER, GearDialog::OnChoiceStepGuider)
-    EVT_BUTTON(GEAR_BUTTON_SETUP_STEPGUIDER, GearDialog::OnButtonSetupStepGuider)
-    EVT_TOGGLEBUTTON(GEAR_BUTTON_CONNECT_STEPGUIDER, GearDialog::OnButtonConnectStepGuider)
-    EVT_TOGGLEBUTTON(GEAR_BUTTON_DISCONNECT_STEPGUIDER, GearDialog::OnButtonDisconnectStepGuider)
-
     EVT_CHOICE(GEAR_CHOICE_ROTATOR, GearDialog::OnChoiceRotator)
     EVT_BUTTON(GEAR_BUTTON_SETUP_ROTATOR, GearDialog::OnButtonSetupRotator)
     EVT_TOGGLEBUTTON(GEAR_BUTTON_CONNECT_ROTATOR, GearDialog::OnButtonConnectRotator)
@@ -105,13 +93,9 @@ wxEND_EVENT_TABLE();
  * |                                   |    +-----------------------+         |
  * +--------------------------------------------------------------------------+
  * +--------------------------------------------------------------------------+
- * |                                   |    +--------------------------+      |
- * |  Aux Mount Selection              |    |AuxMount Connection Button|      |
- * |                                   |    +--------------------------+      |
- * +--------------------------------------------------------------------------+
- * |                                   |    +---------------------+           |
- * |  AO Selection                     |    | AO Connection Button|           |
- * |                                   |    +---------------------+           |
+ * |                                   |    +-------------------------+       |
+ * |  Rotator Selection                |    |Rotator Connection Button|       |
+ * |                                   |    +-------------------------+       |
  * +--------------------------------------------------------------------------+
  * |             +-------------------+   +-------------------+                |
  * |             |    Connect All    |   |  Disconnect All   |                |
@@ -120,25 +104,19 @@ wxEND_EVENT_TABLE();
  */
 GearDialog::GearDialog(wxWindow *pParent)
     : wxDialog(pParent, wxID_ANY, _("Connect Equipment"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX),
-      m_cameraUpdated(false), m_mountUpdated(false), m_stepGuiderUpdated(false), m_rotatorUpdated(false),
-      m_showDarksDialog(false), m_camWarningIssued(false), m_camChanged(false), m_imageScaleRatio(1.0), m_flushConfig(false)
+      m_cameraUpdated(false), m_mountUpdated(false), m_rotatorUpdated(false), m_showDarksDialog(false),
+      m_camWarningIssued(false), m_camChanged(false), m_imageScaleRatio(1.0), m_flushConfig(false)
 {
     m_pCamera = nullptr;
     m_pScope = nullptr;
-    m_pAuxScope = nullptr;
-    m_pStepGuider = nullptr;
     m_pRotator = nullptr;
 
     m_pCameras = nullptr;
     m_pScopes = nullptr;
-    m_pAuxScopes = nullptr;
-    m_pStepGuiders = nullptr;
     m_pRotators = nullptr;
 
     m_pConnectCameraButton = nullptr;
     m_pConnectScopeButton = nullptr;
-    m_pConnectAuxScopeButton = nullptr;
-    m_pConnectStepGuiderButton = nullptr;
     m_pConnectRotatorButton = nullptr;
 
     m_pConnectAllButton = nullptr;
@@ -157,10 +135,6 @@ GearDialog::~GearDialog()
 {
     delete m_pCamera;
     delete m_pScope;
-    if (m_pAuxScope != m_pScope)
-        delete m_pAuxScope;
-
-    delete m_pStepGuider;
     delete m_pRotator;
 
     // prevent double frees
@@ -278,7 +252,7 @@ void GearDialog::Initialize()
     m_pScopes =
         new wxChoice(this, GEAR_CHOICE_SCOPE, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0, wxDefaultValidator, _("Mount"));
     m_pScopes->SetToolTip(
-        _("Specify how guide commands will be sent to the mount - via an ASCOM or INDI driver, directly from the camera or AO, "
+        _("Specify how guide commands will be sent to the mount - via an ASCOM or INDI driver, directly from the camera, "
           "or via one of the GPxxx devices. An ASCOM connection is recommended."));
     m_gearSizer->Add(m_pScopes, wxGBPosition(1, 1), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
     m_pSetupScopeButton = new wxBitmapButton(this, GEAR_BUTTON_SETUP_SCOPE, setup_bmp);
@@ -288,63 +262,17 @@ void GearDialog::Initialize()
     m_gearSizer->Add(m_pConnectScopeButton, wxGBPosition(1, 4), wxGBSpan(1, 1),
                      wxBOTTOM | wxTOP | wxRIGHT | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
 
-    // aux mount - used for position/state information when not guiding through ASCOM interface
-    m_gearSizer->Add(new wxStaticText(this, wxID_ANY, _("Aux Mount"), wxDefaultPosition, wxDefaultSize), wxGBPosition(2, 0),
-                     wxGBSpan(1, 1), wxALL | wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL, 5);
-    m_pAuxScopes = new wxChoice(this, GEAR_CHOICE_AUXSCOPE, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0, wxDefaultValidator,
-                                _("Aux Mount"));
-
-#if defined(GUIDE_ASCOM) || defined(GUIDE_INDI)
-# ifdef GUIDE_ASCOM
-    wxString driverName = _T("ASCOM");
-# else
-    wxString driverName = _T("INDI");
-# endif
-    m_pAuxScopes->SetToolTip(
-        wxString::Format(_("If you are using a guide port (On-camera or GPXXX) interface  for guiding, you can also use an "
-                           "'aux' connection to your %s-compatible mount. This will "
-                           "be used to make automatic calibration adjustments based on declination and side-of-pier.  If you "
-                           "have already selected an %s driver for your 'mount', the 'aux' mount "
-                           "parameter will not be used."),
-                         driverName, driverName));
-#endif // ASCOM or INDI
-
-    m_gearSizer->Add(m_pAuxScopes, wxGBPosition(2, 1), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
-    m_pSetupAuxScopeButton = new wxBitmapButton(this, GEAR_BUTTON_SETUP_AUXSCOPE, setup_bmp);
-    m_pSetupAuxScopeButton->SetToolTip(_("Aux Mount Setup"));
-    m_gearSizer->Add(m_pSetupAuxScopeButton, wxGBPosition(2, 3), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
-    m_pConnectAuxScopeButton = MakeConnectBtn(this, GEAR_BUTTON_CONNECT_AUXSCOPE);
-    m_gearSizer->Add(m_pConnectAuxScopeButton, wxGBPosition(2, 4), wxGBSpan(1, 1),
-                     wxBOTTOM | wxTOP | wxRIGHT | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
-
-    m_moreButton = new wxButton(this, GEAR_BUTTON_MORE, wxEmptyString);
-    m_gearSizer->Add(m_moreButton, wxGBPosition(3, 0), wxGBSpan(1, 4), wxALL | /*wxALIGN_CENTER*/ wxALIGN_LEFT, 5);
-
-    // ao
-    m_gearSizer->Add(new wxStaticText(this, wxID_ANY, _("AO"), wxDefaultPosition, wxDefaultSize), wxGBPosition(4, 0),
-                     wxGBSpan(1, 1), wxALL | wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL, 5);
-    m_pStepGuiders = new wxChoice(this, GEAR_CHOICE_STEPGUIDER, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0,
-                                  wxDefaultValidator, _("AO"));
-    m_gearSizer->Add(m_pStepGuiders, wxGBPosition(4, 1), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
-    m_pSetupStepGuiderButton = new wxBitmapButton(this, GEAR_BUTTON_SETUP_STEPGUIDER, setup_bmp);
-    m_pSetupStepGuiderButton->SetToolTip(_("AO Setup"));
-    m_gearSizer->Add(m_pSetupStepGuiderButton, wxGBPosition(4, 3), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL,
-                     5);
-    m_pConnectStepGuiderButton = MakeConnectBtn(this, GEAR_BUTTON_CONNECT_STEPGUIDER);
-    m_gearSizer->Add(m_pConnectStepGuiderButton, wxGBPosition(4, 4), wxGBSpan(1, 1),
-                     wxBOTTOM | wxTOP | wxRIGHT | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
-
     // rotator
-    m_gearSizer->Add(new wxStaticText(this, wxID_ANY, _("Rotator"), wxDefaultPosition, wxDefaultSize), wxGBPosition(5, 0),
+    m_gearSizer->Add(new wxStaticText(this, wxID_ANY, _("Rotator"), wxDefaultPosition, wxDefaultSize), wxGBPosition(2, 0),
                      wxGBSpan(1, 1), wxALL | wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL, 5);
     m_pRotators = new wxChoice(this, GEAR_CHOICE_ROTATOR, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0, wxDefaultValidator,
                                _("Rotator"));
-    m_gearSizer->Add(m_pRotators, wxGBPosition(5, 1), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
+    m_gearSizer->Add(m_pRotators, wxGBPosition(2, 1), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
     m_pSetupRotatorButton = new wxBitmapButton(this, GEAR_BUTTON_SETUP_ROTATOR, setup_bmp);
     m_pSetupRotatorButton->SetToolTip(_("Rotator Setup"));
-    m_gearSizer->Add(m_pSetupRotatorButton, wxGBPosition(5, 3), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
+    m_gearSizer->Add(m_pSetupRotatorButton, wxGBPosition(2, 3), wxGBSpan(1, 1), wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
     m_pConnectRotatorButton = MakeConnectBtn(this, GEAR_BUTTON_CONNECT_ROTATOR);
-    m_gearSizer->Add(m_pConnectRotatorButton, wxGBPosition(5, 4), wxGBSpan(1, 1),
+    m_gearSizer->Add(m_pConnectRotatorButton, wxGBPosition(2, 4), wxGBSpan(1, 1),
                      wxBOTTOM | wxTOP | wxRIGHT | wxEXPAND | wxALIGN_CENTER_VERTICAL, 5);
 
     // Setup the bottom row of buttons
@@ -365,9 +293,6 @@ void GearDialog::Initialize()
 
     // preselect the choices
     LoadGearChoices();
-
-    m_showMoreGear = m_pStepGuider || m_pRotator;
-    ShowMoreGear();
 
     // fit everything with the sizers
     SetSizerAndFit(pTopLevelSizer);
@@ -418,41 +343,15 @@ static void LoadMounts(wxChoice *mounts)
     LoadChoices(mounts, Scope::MountList());
 }
 
-static void LoadAuxMounts(wxChoice *auxMounts)
-{
-    LoadChoices(auxMounts, Scope::AuxMountList());
-}
-
-static void LoadAOs(wxChoice *aos)
-{
-    LoadChoices(aos, StepGuider::AOList());
-}
-
 static void LoadRotators(wxChoice *rots)
 {
     LoadChoices(rots, Rotator::RotatorList());
 }
 
-#if 1 // TODO: remove after a couple releases - added 2019/02/19
-static wxString NewAoName(const wxString& oldname)
-{
-    // we renamed the AOs when we added the INDI SBIG AO
-    // temporary code to convert the old names to the new
-    // this should be removed after a release or two
-    if (oldname == _T("sxAO"))
-        return _T("SX AO");
-    if (oldname == _T("INDI sxAO"))
-        return _T("SX AO (INDI)");
-    return oldname;
-}
-#endif
-
 void GearDialog::LoadGearChoices()
 {
     LoadCameras(m_pCameras);
     LoadMounts(m_pScopes);
-    LoadAuxMounts(m_pAuxScopes);
-    LoadAOs(m_pStepGuiders);
     LoadRotators(m_pRotators);
 
     wxCommandEvent dummyEvent;
@@ -467,14 +366,6 @@ void GearDialog::LoadGearChoices()
     wxString lastScope = pConfig->Profile.GetString("/scope/LastMenuChoice", _("None"));
     SetMatchingSelection(m_pScopes, lastScope);
     OnChoiceScope(dummyEvent);
-
-    wxString lastAuxScope = pConfig->Profile.GetString("/scope/LastAuxMenuChoice", _("None"));
-    SetMatchingSelection(m_pAuxScopes, lastAuxScope);
-    OnChoiceAuxScope(dummyEvent);
-
-    wxString lastStepGuider = pConfig->Profile.GetString("/stepguider/LastMenuChoice", _("None"));
-    SetMatchingSelection(m_pStepGuiders, NewAoName(lastStepGuider));
-    OnChoiceStepGuider(dummyEvent);
 
     wxString lastRotator = pConfig->Profile.GetString("/rotator/LastMenuChoice", _("None"));
     SetMatchingSelection(m_pRotators, lastRotator);
@@ -491,16 +382,8 @@ int GearDialog::ShowGearDialog(bool autoConnect)
     m_camChanged = false;
     m_camWarningIssued = false;
 
-    if (m_pStepGuider)
-    {
-        assert(pMount == nullptr || pMount == m_pStepGuider);
-        assert(pSecondaryMount == nullptr || pSecondaryMount == m_pScope);
-    }
-    else
-    {
-        assert(pMount == nullptr || pMount == m_pScope);
-        assert(pSecondaryMount == nullptr);
-    }
+    assert(pMount == nullptr || pMount == m_pScope);
+    assert(pSecondaryMount == nullptr);
 
     if (autoConnect)
     {
@@ -510,7 +393,6 @@ int GearDialog::ShowGearDialog(bool autoConnect)
         OnButtonConnectAll(dummyEvent);
 
         if (m_pCamera && m_pCamera->Connected && (!m_pScope || m_pScope->IsConnected()) &&
-            (!m_pAuxScope || m_pAuxScope->IsConnected()) && (!m_pStepGuider || m_pStepGuider->IsConnected()) &&
             (!m_pRotator || m_pRotator->IsConnected()))
         {
             callSuper = false;
@@ -547,17 +429,8 @@ int GearDialog::ShowGearDialog(bool autoConnect)
 void GearDialog::EndModal(int retCode)
 {
     assert(pCamera == m_pCamera);
-
-    if (m_pStepGuider)
-    {
-        assert(pMount == m_pStepGuider);
-        assert(pSecondaryMount == m_pScope);
-    }
-    else
-    {
-        assert(pMount == m_pScope);
-        assert(pSecondaryMount == nullptr);
-    }
+    assert(pMount == m_pScope);
+    assert(pSecondaryMount == nullptr);
 
     pFrame->UpdateButtonsStatus();
     pFrame->pGraphLog->UpdateControls();
@@ -578,18 +451,8 @@ void GearDialog::EndModal(int retCode)
         {
             Debug.Write("Clearing calibration data because camera was changed\n");
 
-            if (m_pStepGuider)
-            {
-                if (m_pStepGuider->IsConnected())
-                    m_pStepGuider->ClearCalibration();
-                if (pSecondaryMount && pSecondaryMount->IsConnected())
-                    pSecondaryMount->ClearCalibration();
-            }
-            else
-            {
-                if (pMount && pMount->IsConnected())
-                    pMount->ClearCalibration();
-            }
+            if (pMount && pMount->IsConnected())
+                pMount->ClearCalibration();
         }
     }
 
@@ -691,110 +554,7 @@ void GearDialog::UpdateScopeButtonState()
             m_pConnectScopeButton->SetId(GEAR_BUTTON_CONNECT_SCOPE);
             m_pScopes->Enable(true);
 
-            if (m_pScope->RequiresCamera() && (!m_pCamera || !m_pCamera->ST4HasGuideOutput() || !m_pCamera->Connected))
-            {
-                m_pConnectScopeButton->Enable(false);
-            }
-            else if (m_pScope->RequiresStepGuider() &&
-                     (!m_pStepGuider || !m_pStepGuider->ST4HasGuideOutput() || !m_pStepGuider->IsConnected()))
-            {
-                m_pConnectScopeButton->Enable(false);
-            }
-            else
-            {
-                m_pConnectScopeButton->Enable(true);
-            }
-        }
-    }
-}
-
-void GearDialog::UpdateAuxScopeButtonState()
-{
-    // Now set up the buttons to match our current state
-    if (m_pScope && m_pScope->CanReportPosition())
-    {
-        int noneInx = m_pAuxScopes->FindString(_("None")); // Should always be first in list
-        m_pAuxScopes->SetSelection(noneInx);
-        m_pAuxScopes->Enable(false);
-        m_pSetupAuxScopeButton->Enable(false);
-        m_pConnectAuxScopeButton->Enable(false);
-
-        if (m_pAuxScope && m_pAuxScope != m_pScope)
-            delete m_pAuxScope;
-        m_pAuxScope = nullptr;
-    }
-    else
-    {
-        m_pAuxScopes->Enable(true);
-        if (!m_pAuxScope)
-        {
-            m_pSetupAuxScopeButton->Enable(false);
-            m_pConnectAuxScopeButton->Enable(false);
-            m_pConnectAuxScopeButton->SetLabel(_("Connect"));
-            m_pConnectAuxScopeButton->SetValue(false);
-            m_pConnectAuxScopeButton->SetToolTip(_("Connect to aux mount"));
-            m_pConnectAuxScopeButton->SetId(GEAR_BUTTON_CONNECT_AUXSCOPE);
-            m_pAuxScopes->Enable(true);
-        }
-        else
-        {
-            m_pSetupAuxScopeButton->Enable(m_pAuxScope->HasSetupDialog());
-            m_pConnectAuxScopeButton->Enable(true);
-
-            if (m_pAuxScope->IsConnected())
-            {
-                m_pConnectAuxScopeButton->SetLabel(_("Disconnect"));
-                m_pConnectAuxScopeButton->SetValue(true);
-                m_pConnectAuxScopeButton->SetToolTip(_("Disconnect from aux mount"));
-                m_pConnectAuxScopeButton->SetId(GEAR_BUTTON_DISCONNECT_AUXSCOPE);
-                m_pAuxScopes->Enable(false);
-            }
-            else
-            {
-                m_pConnectAuxScopeButton->SetLabel(_("Connect"));
-                m_pConnectAuxScopeButton->SetValue(false);
-                m_pConnectAuxScopeButton->SetToolTip(_("Connect to aux mount"));
-                m_pConnectAuxScopeButton->SetId(GEAR_BUTTON_CONNECT_AUXSCOPE);
-                m_pAuxScopes->Enable(true);
-            }
-        }
-    }
-}
-
-void GearDialog::UpdateStepGuiderButtonState()
-{
-    // Now set up the buttons to match our current state
-    if (!m_pStepGuider)
-    {
-        m_pSetupStepGuiderButton->Enable(false);
-        m_pConnectStepGuiderButton->Enable(false);
-        m_pConnectStepGuiderButton->SetLabel(_("Connect"));
-        m_pConnectStepGuiderButton->SetValue(false);
-        m_pConnectStepGuiderButton->SetToolTip(_("Connect to AO"));
-        m_pConnectStepGuiderButton->SetId(GEAR_BUTTON_CONNECT_STEPGUIDER);
-        m_pStepGuiders->Enable(true);
-    }
-    else
-    {
-        m_pConnectStepGuiderButton->Enable(true);
-
-        if (m_pStepGuider->IsConnected())
-        {
-            m_pConnectStepGuiderButton->SetLabel(_("Disconnect"));
-            m_pConnectStepGuiderButton->SetValue(true);
-            m_pConnectStepGuiderButton->SetToolTip(_("Disconnect from AO"));
-            m_pConnectStepGuiderButton->SetId(GEAR_BUTTON_DISCONNECT_STEPGUIDER);
-            m_pStepGuiders->Enable(false);
-            m_pSetupStepGuiderButton->Enable(false);
-        }
-        else
-        {
-            m_pConnectStepGuiderButton->SetLabel(_("Connect"));
-            m_pConnectStepGuiderButton->SetValue(false);
-            m_pConnectStepGuiderButton->SetToolTip(_("Connect to AO"));
-            m_pConnectStepGuiderButton->SetId(GEAR_BUTTON_CONNECT_STEPGUIDER);
-            m_pStepGuiders->Enable(true);
-            m_pSetupStepGuiderButton->Enable(true);
+            m_pConnectScopeButton->Enable(true);
         }
     }
 }
@@ -840,7 +600,6 @@ void GearDialog::UpdateRotatorButtonState()
 void GearDialog::UpdateConnectAllButtonState()
 {
     if ((m_pCamera && !m_pCamera->Connected) || (m_pScope && !m_pScope->IsConnected()) ||
-        (m_pAuxScope && !m_pAuxScope->IsConnected()) || (m_pStepGuider && !m_pStepGuider->IsConnected()) ||
         (m_pRotator && !m_pRotator->IsConnected()))
     {
         m_pConnectAllButton->Enable(true);
@@ -854,7 +613,6 @@ void GearDialog::UpdateConnectAllButtonState()
 void GearDialog::UpdateDisconnectAllButtonState()
 {
     if ((m_pCamera && m_pCamera->Connected) || (m_pScope && m_pScope->IsConnected()) ||
-        (m_pAuxScope && m_pAuxScope->IsConnected()) || (m_pStepGuider && m_pStepGuider->IsConnected()) ||
         (m_pRotator && m_pRotator->IsConnected()))
     {
         m_pDisconnectAllButton->Enable(true);
@@ -876,8 +634,6 @@ void GearDialog::UpdateButtonState()
 
     UpdateCameraButtonState();
     UpdateScopeButtonState();
-    UpdateAuxScopeButtonState();
-    UpdateStepGuiderButtonState();
     UpdateRotatorButtonState();
     UpdateConnectAllButtonState();
     UpdateDisconnectAllButtonState();
@@ -890,19 +646,13 @@ void GearDialog::OnButtonConnectAll(wxCommandEvent& event)
     bool canceled = DoConnectCamera(false);
     if (canceled)
         return;
-    OnButtonConnectStepGuider(event);
     OnButtonConnectScope(event);
-    OnButtonConnectAuxScope(event);
     OnButtonConnectRotator(event);
 
     bool done = true;
     if (m_pCamera && !m_pCamera->Connected)
         done = false;
     if (m_pScope && !m_pScope->IsConnected())
-        done = false;
-    if (m_pAuxScope && !m_pAuxScope->IsConnected())
-        done = false;
-    if (m_pStepGuider && !m_pStepGuider->IsConnected())
         done = false;
     if (m_pRotator && !m_pRotator->IsConnected())
         done = false;
@@ -916,9 +666,7 @@ void GearDialog::OnButtonDisconnectAll(wxCommandEvent& event)
     Debug.Write("gear_dialog: OnButtonDisconnectAll\n");
 
     OnButtonDisconnectScope(event);
-    OnButtonDisconnectAuxScope(event);
     OnButtonDisconnectCamera(event);
-    OnButtonDisconnectStepGuider(event);
     OnButtonDisconnectRotator(event);
 }
 
@@ -1215,7 +963,6 @@ bool GearDialog::DoConnectCamera(bool autoReconnecting)
 
         Debug.Write(wxString::Format("HasShutter=%d\n", m_pCamera->HasShutter));
         Debug.Write(wxString::Format("HasSubFrames=%d\n", m_pCamera->HasSubframes));
-        Debug.Write(wxString::Format("ST4HasGuideOutput=%d\n", m_pCamera->ST4HasGuideOutput()));
 
         if (!autoReconnecting) // On a reconnect, this stuff is already established
         {
@@ -1276,12 +1023,6 @@ void GearDialog::OnButtonDisconnectCamera(wxCommandEvent& event)
 
         m_pCamera->Disconnect();
 
-        if (m_pScope && m_pScope->RequiresCamera() && m_pScope->IsConnected())
-        {
-            Debug.Write("gear_dialog: scope requires camera so disconnecting scope\n");
-            OnButtonDisconnectScope(event);
-        }
-
         pFrame->StatusMsg(_("Camera Disconnected"));
         pFrame->UpdateStatusBarStateLabels();
         pFrame->pStatsWin->UpdateCooler();
@@ -1298,20 +1039,9 @@ void GearDialog::OnButtonDisconnectCamera(wxCommandEvent& event)
 void GearDialog::UpdateGearPointers()
 {
     pCamera = m_pCamera;
-
-    if (m_pStepGuider)
-    {
-        pMount = m_pStepGuider;
-        pSecondaryMount = m_pScope;
-    }
-    else
-    {
-        pMount = m_pScope;
-        pSecondaryMount = nullptr;
-    }
-
-    pPointingSource = m_pScope && (!m_pAuxScope || m_pScope->CanReportPosition()) ? m_pScope : m_pAuxScope;
-
+    pMount = m_pScope;
+    pSecondaryMount = nullptr;
+    pPointingSource = m_pScope;
     pRotator = m_pRotator;
 }
 
@@ -1351,39 +1081,6 @@ void GearDialog::OnChoiceScope(wxCommandEvent& event)
     m_mountUpdated = true;
 }
 
-void GearDialog::OnChoiceAuxScope(wxCommandEvent& event)
-{
-    try
-    {
-        wxString choice = m_pAuxScopes->GetStringSelection();
-
-        if (m_pAuxScope != m_pScope)
-            delete m_pAuxScope;
-        m_pAuxScope = nullptr;
-        UpdateGearPointers();
-
-        m_pAuxScope = Scope::Factory(choice);
-        Debug.AddLine(wxString::Format("Created new aux scope of type %s = %p", choice, m_pAuxScope));
-
-        if (pConfig->Profile.GetString("/scope/LastAuxMenuChoice", wxEmptyString) != choice)
-        {
-            pConfig->Profile.SetString("/scope/LastAuxMenuChoice", choice);
-            m_flushConfig = true;
-        }
-
-        if (!m_pAuxScope)
-        {
-            throw THROW_INFO("OnAuxChoiceScope: m_pAuxScope == NULL");
-        }
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-    }
-
-    UpdateButtonState();
-}
-
 void GearDialog::OnButtonSetupScope(wxCommandEvent& event)
 {
     m_pScope->SetupDialog();
@@ -1392,16 +1089,6 @@ void GearDialog::OnButtonSetupScope(wxCommandEvent& event)
     wxString selection = m_pScopes->GetStringSelection();
     LoadMounts(m_pScopes);
     SetMatchingSelection(m_pScopes, selection);
-}
-
-void GearDialog::OnButtonSetupAuxScope(wxCommandEvent& event)
-{
-    m_pAuxScope->SetupDialog();
-
-    // scope setup may have changed scope name so re-load the aux scope list
-    wxString selection = m_pAuxScopes->GetStringSelection();
-    LoadAuxMounts(m_pAuxScopes);
-    SetMatchingSelection(m_pAuxScopes, selection);
 }
 
 void GearDialog::OnButtonConnectScope(wxCommandEvent& event)
@@ -1455,44 +1142,6 @@ void GearDialog::OnButtonConnectScope(wxCommandEvent& event)
     UpdateButtonState();
 }
 
-void GearDialog::OnButtonConnectAuxScope(wxCommandEvent& event)
-{
-    Debug.Write("gear_dialog: OnButtonConnectAuxScope\n");
-
-    try
-    {
-        // m_pAuxScope is NULL when scope selection is "None"
-
-        if (m_pAuxScope && m_pAuxScope->IsConnected())
-        {
-            throw THROW_INFO("OnButtonConnectAuxScope: called when connected");
-        }
-
-        if (m_pAuxScope)
-        {
-            pFrame->StatusMsgNoTimeout(_("Connecting to Aux Mount ..."));
-
-            Debug.Write(wxString::Format("Connecting to aux mount [%s]\n", m_pAuxScopes->GetStringSelection()));
-
-            if (m_pAuxScope->Connect())
-            {
-                throw THROW_INFO("OnButtonConnectAuxScope: connect failed");
-            }
-
-            pFrame->StatusMsg(_("Aux Mount Connected"));
-        }
-
-        Debug.AddLine("Connected AuxScope:" + (m_pAuxScope ? m_pAuxScope->Name() : "None"));
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-        pFrame->StatusMsg(_("Aux Mount Connect Failed"));
-    }
-
-    UpdateButtonState();
-}
-
 void GearDialog::OnButtonDisconnectScope(wxCommandEvent& event)
 {
     Debug.Write("gear_dialog: OnButtonDisconnectScope\n");
@@ -1512,195 +1161,6 @@ void GearDialog::OnButtonDisconnectScope(wxCommandEvent& event)
         m_pScope->Disconnect();
 
         pFrame->StatusMsg(_("Mount Disconnected"));
-        pFrame->UpdateStatusBarStateLabels();
-
-        if (pFrame->pManualGuide)
-        {
-            pFrame->pManualGuide->Destroy();
-        }
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-    }
-
-    UpdateButtonState();
-}
-
-void GearDialog::OnButtonDisconnectAuxScope(wxCommandEvent& event)
-{
-    Debug.Write("gear_dialog: OnButtonDisconnectAuxScope\n");
-
-    try
-    {
-        if (!m_pAuxScope)
-        {
-            throw ERROR_INFO("OnButtonDisconnectAuxScope called with m_pAuxScope == NULL");
-        }
-
-        if (!m_pAuxScope->IsConnected())
-        {
-            throw THROW_INFO("OnButtonDisconnectAuxScope: called when not connected");
-        }
-
-        m_pAuxScope->Disconnect();
-        pFrame->StatusMsg(_("Aux Mount Disconnected"));
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-    }
-
-    UpdateButtonState();
-}
-
-void GearDialog::ShowMoreGear()
-{
-    if (m_showMoreGear)
-    {
-        for (int i = 14; i <= 14 + 8; i++)
-            m_gearSizer->Show(i, true);
-        m_moreButton->SetLabel(_("Hide"));
-    }
-    else
-    {
-        for (int i = 14; i <= 14 + 8; i++)
-            m_gearSizer->Hide(i);
-        m_moreButton->SetLabel(_("More Equipment ..."));
-    }
-}
-
-void GearDialog::OnButtonMore(wxCommandEvent& event)
-{
-    m_showMoreGear = !m_showMoreGear;
-    ShowMoreGear();
-    Layout();
-    GetSizer()->Fit(this);
-}
-
-void GearDialog::OnChoiceStepGuider(wxCommandEvent& event)
-{
-    try
-    {
-        wxString choice = m_pStepGuiders->GetStringSelection();
-
-        delete m_pStepGuider;
-        m_pStepGuider = NULL;
-        UpdateGearPointers();
-
-        m_pStepGuider = StepGuider::Factory(choice);
-        Debug.AddLine(wxString::Format("Created new stepguider of type %s = %p", choice, m_pStepGuider));
-
-        if (pConfig->Profile.GetString("/stepguider/LastMenuChoice", wxEmptyString) != choice)
-        {
-            pConfig->Profile.SetString("/stepguider/LastMenuChoice", choice);
-            m_flushConfig = true;
-        }
-
-        if (!m_pStepGuider)
-        {
-            throw THROW_INFO("OnChoiceStepGuider: m_pStepGuider == NULL");
-        }
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-    }
-
-    UpdateButtonState();
-
-    m_stepGuiderUpdated = true;
-}
-
-void GearDialog::OnButtonSetupStepGuider(wxCommandEvent& event)
-{
-    m_pStepGuider->ShowPropertyDialog();
-
-    // setup dialog may have changed device name so re-load the list
-    wxString selection = m_pStepGuiders->GetStringSelection();
-    LoadAOs(m_pStepGuiders);
-    SetMatchingSelection(m_pStepGuiders, selection);
-}
-
-void GearDialog::OnButtonConnectStepGuider(wxCommandEvent& event)
-{
-    Debug.Write("gear_dialog: OnButtonConnectStepGuider\n");
-
-    try
-    {
-        // m_pStepGuider is NULL when stepguider selection is "None"
-
-        if (m_pStepGuider && m_pStepGuider->IsConnected())
-        {
-            throw THROW_INFO("OnButtonConnectStepGuider: called when connected");
-        }
-
-        if (m_pStepGuider)
-        {
-            pFrame->StatusMsgNoTimeout(_("Connecting to AO ..."));
-
-            Debug.Write(wxString::Format("Connecting to AO [%s]\n", m_pStepGuiders->GetStringSelection()));
-
-            if (m_pStepGuider->Connect())
-            {
-                throw THROW_INFO("OnButtonConnectStepGuider: connect failed");
-            }
-
-            pFrame->StatusMsgNoTimeout(_("Centering AO ..."));
-            if (m_pStepGuider->Center())
-            {
-                m_pStepGuider->Disconnect();
-                throw ERROR_INFO("StepGuider unable to center");
-            }
-        }
-
-        if (m_pStepGuider)
-        {
-            pFrame->StatusMsg(_("AO Connected"));
-            pFrame->UpdateStatusBarStateLabels();
-        }
-        else
-        {
-            pFrame->UpdateStatusBarStateLabels();
-        }
-
-        Debug.AddLine("Connected AO:" + (m_pStepGuider ? m_pStepGuider->Name() : "None"));
-    }
-    catch (const wxString& Msg)
-    {
-        POSSIBLY_UNUSED(Msg);
-        pFrame->StatusMsg(_("AO Connect Failed"));
-        pFrame->UpdateStatusBarStateLabels();
-    }
-
-    UpdateButtonState();
-}
-
-void GearDialog::OnButtonDisconnectStepGuider(wxCommandEvent& event)
-{
-    Debug.Write("gear_dialog: OnButtonDisconnectStepGuider\n");
-
-    try
-    {
-        if (m_pStepGuider == NULL)
-        {
-            throw ERROR_INFO("OnButtonDisconnectStepGuider called with m_pStepGuider == NULL");
-        }
-
-        if (!m_pStepGuider->IsConnected())
-        {
-            throw THROW_INFO("OnButtonDisconnectStepGuider: called when not connected");
-        }
-
-        m_pStepGuider->Disconnect();
-
-        if (m_pScope && m_pScope->RequiresStepGuider() && m_pScope->IsConnected())
-        {
-            Debug.Write("gear_dialog: scope requires stepguider so disconnecting scope\n");
-            OnButtonDisconnectScope(event);
-        }
-
-        pFrame->StatusMsg(_("AO Disconnected"));
         pFrame->UpdateStatusBarStateLabels();
 
         if (pFrame->pManualGuide)
@@ -1940,7 +1400,6 @@ bool GearDialog::SetProfile(int profileId, wxString *error)
     }
 
     if ((m_pCamera && m_pCamera->Connected) || (m_pScope && m_pScope->IsConnected()) ||
-        (m_pAuxScope && m_pAuxScope->IsConnected()) || (m_pStepGuider && m_pStepGuider->IsConnected()) ||
         (m_pRotator && m_pRotator->IsConnected()))
     {
         *error = "cannot set profile when equipment is connected";
@@ -1974,7 +1433,6 @@ bool GearDialog::SetProfile(int profileId, wxString *error)
 bool GearDialog::ConnectAll(wxString *error)
 {
     if (m_pCamera && m_pCamera->Connected && (!m_pScope || m_pScope->IsConnected()) &&
-        (!m_pAuxScope || m_pAuxScope->IsConnected()) && (!m_pStepGuider || m_pStepGuider->IsConnected()) &&
         (!m_pRotator || m_pRotator->IsConnected()))
     {
         // everything already connected
@@ -2007,10 +1465,6 @@ bool GearDialog::ConnectAll(wxString *error)
         fail += " camera";
     if (m_pScope && !m_pScope->IsConnected())
         fail += " mount";
-    if (m_pAuxScope && !m_pAuxScope->IsConnected())
-        fail += " aux mount";
-    if (m_pStepGuider && !m_pStepGuider->IsConnected())
-        fail += " AO";
     if (m_pRotator && !m_pRotator->IsConnected())
         fail += " Rotator";
 
@@ -2028,7 +1482,6 @@ bool GearDialog::ConnectAll(wxString *error)
 bool GearDialog::DisconnectAll(wxString *error)
 {
     if ((!m_pCamera || !m_pCamera->Connected) && (!m_pScope || !m_pScope->IsConnected()) &&
-        (!m_pAuxScope || !m_pAuxScope->IsConnected()) && (!m_pStepGuider || !m_pStepGuider->IsConnected()) &&
         (!m_pRotator || !m_pRotator->IsConnected()))
     {
         // nothing connected
@@ -2068,22 +1521,10 @@ void GearDialog::Shutdown(bool forced)
         m_pScope->Disconnect();
     }
 
-    if (m_pAuxScope && m_pAuxScope->IsConnected())
-    {
-        Debug.AddLine("Shutdown: disconnect aux scope");
-        m_pAuxScope->Disconnect();
-    }
-
     if (!forced && m_pCamera && m_pCamera->Connected)
     {
         Debug.AddLine("Shutdown: disconnect camera");
         m_pCamera->Disconnect();
-    }
-
-    if (!forced && m_pStepGuider && m_pStepGuider->IsConnected())
-    {
-        Debug.AddLine("Shutdown: disconnect stepguider");
-        m_pStepGuider->Disconnect();
     }
 
     if (m_pRotator && m_pRotator->IsConnected())
@@ -2306,12 +1747,6 @@ void GearDialog::UpdateAdvancedDialog(bool preLoad)
     {
         frame->pAdvancedDialog->UpdateMountPage();
         m_mountUpdated = false;
-    }
-
-    if (m_stepGuiderUpdated)
-    {
-        frame->pAdvancedDialog->UpdateAoPage();
-        m_stepGuiderUpdated = false;
     }
 
     if (m_rotatorUpdated)
