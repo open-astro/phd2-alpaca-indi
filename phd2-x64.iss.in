@@ -24,51 +24,31 @@ Source: Release\webui\*; DestDir: {app}\webui; Flags: recursesubdirs replacesame
 Source: Release\locale\*; Excludes: *-old.*,help; DestDir: {app}\locale; Flags: recursesubdirs replacesameversion
 Source: Release\PHD2GuideHelp.zip; DestDir: {app}; Flags: replacesameversion
 Source: README-PHD2.txt; DestDir: {app}; Flags: isreadme replacesameversion
-Source: Release\altaircam.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\AltairCam_legacy.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\ASICamera2.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\astroDLLGeneric.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\astroDLLQHY5V.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\astroDLLsspiag.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\CMOSDLL.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\DICAMSDK.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\gXusb.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\inpout32.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\ogmacam.dll; DestDir: {app}; Flags: replacesameversion
+; OpenCV libraries
 Source: Release\opencv_core4.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\opencv_highgui4.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\opencv_imgproc4.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\opencv_videoio4.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\opencv_imgcodecs4.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\qhyccd.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\ShoestringGPUSB_DLL.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\ShoestringLXUSB_DLL.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\SSPIAGCAM.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\SSPIAGUSB_WIN.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\SXUSB.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\tbb.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\toupcam.dll; DestDir: {app}; Flags: replacesameversion
-; 32-bit Source: Release\SVBCameraSDK.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\PlayerOneCamera.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\LIBCURL.DLL; DestDir: {app}; Flags: replacesameversion
-Source: ..\build\dark_mover.vbs; DestDir: {tmp}; Flags: replacesameversion
-; Missing: TIS_DShowLib09.dll
-; Missing: TIS_UDSHL09_vc10.dll
-; Missing: TIS_UDSHL09_vc9.dll
+; Image codec libraries
+Source: Release\jpeg62.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\libpng16.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\tiff.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\libwebp.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\libwebpdecoder.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\libsharpyuv.dll; DestDir: {app}; Flags: replacesameversion
+; Core libraries
+Source: Release\cfitsio.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\libcurl.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\zlib1.dll; DestDir: {app}; Flags: replacesameversion
+Source: Release\liblzma.dll; DestDir: {app}; Flags: replacesameversion
+; Visual C++ runtime
 Source: Release\msvcp140.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\vcomp140.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\vcruntime140.dll; DestDir: {app}; Flags: replacesameversion
 Source: Release\concrt140.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\cfitsio.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\jpeg62.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\libcurl.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\liblzma.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\libwebp.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\libwebpdecoder.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\libsharpyuv.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\libpng16.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\tiff.dll; DestDir: {app}; Flags: replacesameversion
-Source: Release\zlib1.dll; DestDir: {app}; Flags: replacesameversion
+; Dark library migration script
+Source: ..\build\dark_mover.vbs; DestDir: {tmp}; Flags: replacesameversion
 
 [Icons]
 Name: {group}\PHD Guiding 2; FileName: {app}\phd2.exe
