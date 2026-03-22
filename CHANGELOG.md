@@ -5,9 +5,39 @@ All notable changes to OpenAstro PHD2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-03-07
+## [1.2.0] - 2026-03-22
+
+### Removed
+- **Legacy camera drivers and SDKs**
+  - Removed all non-Alpaca camera drivers and bundled third-party SDK libraries (ZWO, QHY, SBIG, Altair, ToupTek, SVBony, PlayerOne, Moravian, INDI, ASCOM, OpenCV, and remaining legacy backends).
+  - Removed associated sources, headers, and SDK references from `CMakeLists.txt` and the `cameras/` tree.
+- **Adaptive optics**
+  - Removed adaptive optics from the gear dialog, profile wizard, and event server API (StepGuider/SXAO, `stepguider_sbigao_indi`). Stubs retained for backward compatibility.
+- **Auxiliary mount and on-camera ST4 guiding**
+  - Removed auxiliary mount support and on-camera ST4 guiding (`OnboardST4`, `ScopeOnCamera`, `ScopeOnStepGuider`). Guiding in this fork uses Alpaca only.
+- **INDI**
+  - Removed INDI support entirely (`scope_indi`, `rotator_indi`, `indi_gui`, `config_indi`).
+- **Platform build wiring**
+  - Removed macOS framework copy and `install_name_tool` handling for dropped SDKs.
+  - Removed `/DELAYLOAD:sbigudrv.dll` from Windows link flags.
+
+### Changed
+- **Gear and UI**
+  - Simplified gear dialog to camera, mount, and rotator only.
+- **Formatting**
+  - Applied clang-format across affected files (`event_server.cpp`, `gear_dialog.cpp`, `gear_simulator.cpp`, `profile_wizard.cpp`, `stepguiders.h`, `camera.cpp`).
+
+## [1.1.0] - 2026-03-07
 
 ### Added
+- **Headless Runtime + API Expansion**
+  - Added CLI flags `--headless` and `--headless-auto-connect`.
+  - Added auto-connect support for selected equipment at startup.
+  - Added Linux systemd unit example: `packaging/systemd/phd2-headless.service`.
+  - Added JSON-RPC methods for equipment/config selection, including INDI and Alpaca server/discovery/device-selection methods.
+  - Added `get_equipment_choices`.
+  - Added JSON-RPC smoke tooling and equipment choice listing scripts.
+  - Added `doc/jsonrpc_api.md` API reference.
 - **Embedded Web Portal (single-app mode)**
   - Added an in-process HTTP server integrated into `EventServer` lifecycle (start/stop with Server Mode).
   - Added local web access endpoint: `http://127.0.0.1:8080/` for instance 1.
@@ -34,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Switched CMake/runtime and build scripts to read version from `version.md`.
 
 ### Changed
+- **JSON-RPC Contract Hardening**
+  - Rejected selection/config changes while equipment is connected.
+  - Standardized invalid parameter handling.
+  - Expanded `get_connected` coverage for aux mount/AO/rotator.
 - **Web Wizard UX**
   - Updated profile-first flow, device discovery, dark-library controls, status messaging, and profile summaries to align more closely with native PHD2 behavior.
   - Updated Alpaca discovery inputs/behavior so host/port are not prefilled before discovery.
@@ -50,24 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### API Links
 - JSON-RPC and Web API reference: [doc/jsonrpc_api.md](doc/jsonrpc_api.md)
 - Web portal usage/behavior notes: [scripts/README_web_ui.md](scripts/README_web_ui.md)
-
-## [1.1.0] - 2026-03-05
-
-### Added
-- **Headless Runtime + API Expansion**
-  - Added CLI flags `--headless` and `--headless-auto-connect`.
-  - Added auto-connect support for selected equipment at startup.
-  - Added Linux systemd unit example: `packaging/systemd/phd2-headless.service`.
-  - Added JSON-RPC methods for equipment/config selection, including INDI and Alpaca server/discovery/device-selection methods.
-  - Added `get_equipment_choices`.
-  - Added JSON-RPC smoke tooling and equipment choice listing scripts.
-  - Added `doc/jsonrpc_api.md` API reference.
-
-### Changed
-- **JSON-RPC Contract Hardening**
-  - Rejected selection/config changes while equipment is connected.
-  - Standardized invalid parameter handling.
-  - Expanded `get_connected` coverage for aux mount/AO/rotator.
 
 ### Commit References
 - `bf0d0349` - Add headless runtime and JSON-RPC equipment selection API
