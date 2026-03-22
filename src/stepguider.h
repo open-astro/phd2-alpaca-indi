@@ -82,7 +82,7 @@ struct StepInfo
     int dy;
 };
 
-class StepGuider : public Mount, public OnboardST4
+class StepGuider : public Mount
 {
     int m_samplesToAverage;
     int m_bumpPercentage;
