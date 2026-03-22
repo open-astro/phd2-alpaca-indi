@@ -122,7 +122,7 @@ private:
     wxString m_SelectedMount;
     bool m_PositionAware;
     wxString m_SelectedAuxMount; // always "None" - aux mount removed
-    wxString m_SelectedAO;       // always "None" - AO removed
+    wxString m_SelectedAO; // always "None" - AO removed
     wxString m_SelectedRotator;
     int m_FocalLength;
     double m_GuideSpeed;

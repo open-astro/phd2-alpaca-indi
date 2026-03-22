@@ -104,8 +104,8 @@ wxEND_EVENT_TABLE();
  */
 GearDialog::GearDialog(wxWindow *pParent)
     : wxDialog(pParent, wxID_ANY, _("Connect Equipment"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX),
-      m_cameraUpdated(false), m_mountUpdated(false), m_rotatorUpdated(false),
-      m_showDarksDialog(false), m_camWarningIssued(false), m_camChanged(false), m_imageScaleRatio(1.0), m_flushConfig(false)
+      m_cameraUpdated(false), m_mountUpdated(false), m_rotatorUpdated(false), m_showDarksDialog(false),
+      m_camWarningIssued(false), m_camChanged(false), m_imageScaleRatio(1.0), m_flushConfig(false)
 {
     m_pCamera = nullptr;
     m_pScope = nullptr;

@@ -34,8 +34,8 @@
  */
 
 #ifndef STEPGUIDERS_H_INCLUDED
-# define STEPGUIDERS_H_INCLUDED
+#define STEPGUIDERS_H_INCLUDED
 
-# include "stepguider.h"
+#include "stepguider.h"
 
 #endif /* STEPGUIDERS_H_INCLUDED */

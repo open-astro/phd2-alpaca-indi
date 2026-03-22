@@ -1818,8 +1818,8 @@ static bool all_equipment_connected()
 {
     StepGuider *ao = TheAO();
     return pCamera && pCamera->Connected && (!pMount || pMount->IsConnected()) &&
-        (!pSecondaryMount || pSecondaryMount->IsConnected()) &&
-        (!ao || ao->IsConnected()) && (!pRotator || pRotator->IsConnected());
+        (!pSecondaryMount || pSecondaryMount->IsConnected()) && (!ao || ao->IsConnected()) &&
+        (!pRotator || pRotator->IsConnected());
 }
 
 static void set_profile(JObj& response, const json_value *params)

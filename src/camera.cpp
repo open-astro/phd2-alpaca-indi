@@ -1114,4 +1114,3 @@ bool GuideCamera::Capture(GuideCamera *camera, usImage& img, const CaptureParams
 
     return err;
 }
-

@@ -2040,11 +2040,11 @@ void GearSimulator::FlipPierSide(GuideCamera *camera)
 
 StepGuider *GearSimulator::MakeAOSimulator()
 {
-#ifdef STEPGUIDER_SIMULATOR
+# ifdef STEPGUIDER_SIMULATOR
     return new StepGuiderSimulator();
-#else
+# else
     return nullptr;
-#endif
+# endif
 }
 
 Rotator *GearSimulator::MakeRotatorSimulator()
