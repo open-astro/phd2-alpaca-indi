@@ -5273,12 +5273,12 @@ bool EventServer::EventServerStart(unsigned int instanceId)
 
     m_httpPort = 8080 + instanceId - 1;
     wxIPV4address httpServerAddr;
-    httpServerAddr.Hostname("127.0.0.1");
+    httpServerAddr.Hostname("0.0.0.0");
     httpServerAddr.Service(m_httpPort);
     m_httpServerSocket = new wxSocketServer(httpServerAddr, wxSOCKET_REUSEADDR);
     if (!m_httpServerSocket->Ok())
     {
-        Debug.Write(wxString::Format("HTTP server failed to start - Could not listen at 127.0.0.1:%u\n", m_httpPort));
+        Debug.Write(wxString::Format("HTTP server failed to start - Could not listen at 0.0.0.0:%u\n", m_httpPort));
         delete m_httpServerSocket;
         m_httpServerSocket = nullptr;
         EventServerStop();
@@ -5288,7 +5288,7 @@ bool EventServer::EventServerStart(unsigned int instanceId)
     m_httpServerSocket->SetNotify(wxSOCKET_CONNECTION_FLAG);
     m_httpServerSocket->Notify(true);
     m_httpWebRoot = event_server_web_root();
-    Debug.Write(wxString::Format("HTTP server started, listening on 127.0.0.1:%u (web root: %s)\n", m_httpPort, m_httpWebRoot));
+    Debug.Write(wxString::Format("HTTP server started, listening on 0.0.0.0:%u (web root: %s)\n", m_httpPort, m_httpWebRoot));
 
     return false;
 }

@@ -9,7 +9,6 @@ Type=simple
 User=phd2-alpaca
 Group=phd2-alpaca
 WorkingDirectory=/var/lib/phd2-alpaca
-Environment=LD_LIBRARY_PATH=/usr/lib/phd2-alpaca
 ExecStart=/usr/bin/xvfb-run -a /usr/bin/phd2-alpaca --headless --headless-auto-connect
 Restart=on-failure
 RestartSec=3

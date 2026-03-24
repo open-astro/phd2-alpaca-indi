@@ -11,7 +11,7 @@ Build-Depends: debhelper-compat (= 13),
                libudev-dev,
                libv4l-dev,
                libnova-dev,
-               libcurl4-gnutls-dev,
+               libcurl4-openssl-dev | libcurl4-gnutls-dev,
                libeigen3-dev,
                libgtest-dev
 Standards-Version: 4.6.2

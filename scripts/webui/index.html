@@ -159,7 +159,6 @@ const STEPS = [
   { key:'profile', title:'Profile', help:'Create/select profiles. If none exist, create one before continuing.' },
   { key:'camera', title:'Camera', help:'Select guide camera; Alpaca includes discovery/query/manual device selection.' },
   { key:'mount', title:'Mount', help:'Select mount.' },
-  { key:'ao', title:'AO', help:'Select AO.' },
   { key:'rotator', title:'Rotator', help:'Select rotator.' },
   { key:'setup', title:'Profile Setup', help:'Set focal/pixel/calibration values.' },
   { key:'finish', title:'Finish', help:'Connect gear and build dark frames.' }
@@ -186,7 +185,7 @@ const state = {
   alpaca: { servers: [], devices: { camera: [], mount: [], rotator: [] } },
   finishProgress: { visible: false, percent: 0, text: '' },
   chosen: {
-    camera: '', mount: '', ao: '', rotator: '', camera_id: '',
+    camera: '', mount: '', rotator: '', camera_id: '',
     alpaca: {
       host: '',
       port: '',
@@ -325,14 +324,12 @@ function renderProfileSummary(){
   const cameraName = String(eq?.camera?.name || '').trim();
   const mountName = String(eq?.mount?.name || '').trim();
   const rotatorName = String(eq?.rotator?.name || '').trim();
-  const aoName = String((eq?.AO?.name ?? eq?.ao?.name) || '').trim();
   const cameraId = String(s.selected_camera_id || '').trim();
 
   const equipmentRows = [
     kv('Camera', fmtValue(cameraName || s.selected_camera)),
     ...(hasValue(cameraId) ? [kv('Camera ID', cameraId)] : []),
     kv('Mount', fmtValue(mountName || s.selected_mount)),
-    kv('AO', fmtValue(aoName || s.selected_ao)),
     kv('Rotator', fmtValue(rotatorName || s.selected_rotator))
   ].join('');
 
@@ -485,7 +482,6 @@ function cacheKey(host, port, dtype){ return `${String(host).trim().toLowerCase(
 function onGearChoiceChanged(stepType, value){
   if (stepType==='camera') state.chosen.camera = value;
   if (stepType==='mount') state.chosen.mount = value;
-  if (stepType==='ao') state.chosen.ao = value;
   if (stepType==='rotator') state.chosen.rotator = value;
   render();
 }
@@ -494,7 +490,6 @@ function syncChosenFromSetup(){
   const s = state.setup || {};
   state.chosen.camera = s.selected_camera || state.chosen.camera;
   state.chosen.mount = s.selected_mount || state.chosen.mount;
-  state.chosen.ao = s.selected_ao || state.chosen.ao;
   state.chosen.rotator = s.selected_rotator || state.chosen.rotator;
   state.chosen.camera_id = s.selected_camera_id || state.chosen.camera_id;
   if (s.alpaca_server){
@@ -594,7 +589,6 @@ function renderGearStep(type){
   const map = {
     camera: { label:'Camera', items:choices.camera||[], chosen:state.chosen.camera, id:'cameraChoice' },
     mount: { label:'Mount', items:choices.mount||[], chosen:state.chosen.mount, id:'mountChoice' },
-    ao: { label:'AO', items:choices.AO||[], chosen:state.chosen.ao, id:'aoChoice' },
     rotator: { label:'Rotator', items:choices.rotator||[], chosen:state.chosen.rotator, id:'rotatorChoice' }
   };
   const cfg = map[type];
@@ -737,7 +731,6 @@ function render(){
   if (step.key==='profile') renderProfileStep();
   if (step.key==='camera') renderGearStep('camera');
   if (step.key==='mount') renderGearStep('mount');
-  if (step.key==='ao') renderGearStep('ao');
   if (step.key==='rotator') renderGearStep('rotator');
   if (step.key==='setup') { renderSetupStep(); void syncSetupPixelSizeFromCamera(); }
   if (step.key==='finish') renderFinishStep();
@@ -1005,7 +998,7 @@ function goBack(){ if (state.busy || state.step===0) return; state.step--; rende
 async function persistCurrentStep(){
   const key = STEPS[state.step].key;
   if (key==='profile'){ if (!hasProfiles()) throw new Error('Create a profile before continuing.'); return; }
-  if (['camera','mount','ao','rotator','setup'].includes(key)) await ensureDisconnected();
+  if (['camera','mount','rotator','setup'].includes(key)) await ensureDisconnected();
 
   if (key==='camera'){
     const camera = document.getElementById('cameraChoice')?.value || '';
@@ -1042,8 +1035,6 @@ async function persistCurrentStep(){
     }
     state.chosen.mount = mount; await refreshAll(); return;
   }
-
-  if (key==='ao'){ const ao = document.getElementById('aoChoice')?.value || ''; await rpc('set_selected_ao', { ao }); state.chosen.ao = ao; await refreshAll(); return; }
 
   if (key==='rotator'){
     const rotator = document.getElementById('rotatorChoice')?.value || '';
