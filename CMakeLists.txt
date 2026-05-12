@@ -191,6 +191,12 @@ set(cam_SRC
   ${phd_src_dir}/cameras.h
 )
 
+# INDI camera support (all platforms; libindi client builds via vcpkg on Windows)
+list(APPEND cam_SRC
+  ${phd_src_dir}/cam_indi.cpp
+  ${phd_src_dir}/cam_indi.h
+)
+
 source_group(Cameras FILES ${cam_SRC})
 
 set(scopes_SRC
@@ -218,6 +224,12 @@ set(scopes_SRC
   ${phd_src_dir}/stepguider.cpp
   ${phd_src_dir}/stepguider.h
   ${phd_src_dir}/stepguiders.h
+)
+
+# INDI mount support (all platforms)
+list(APPEND scopes_SRC
+  ${phd_src_dir}/scope_indi.cpp
+  ${phd_src_dir}/scope_indi.h
 )
 source_group(Scopes FILES ${scopes_SRC})
 
@@ -359,6 +371,7 @@ set(phd2_SRC
   ${phd_src_dir}/runinbg.cpp
   ${phd_src_dir}/runinbg.h
 
+
   ${phd_src_dir}/serialport.cpp
   ${phd_src_dir}/serialport.h
   ${phd_src_dir}/serialport_loopback.cpp
@@ -412,6 +425,16 @@ if (WIN32)
       ${phd_src_dir}/comdispatch.cpp
   )
 endif()
+
+# INDI rotator + shared INDI config/GUI (all platforms)
+list(APPEND phd2_SRC
+    ${phd_src_dir}/rotator_indi.cpp
+    ${phd_src_dir}/rotator_indi.h
+    ${phd_src_dir}/config_indi.cpp
+    ${phd_src_dir}/config_indi.h
+    ${phd_src_dir}/indi_gui.cpp
+    ${phd_src_dir}/indi_gui.h
+)
 source_group(src FILES ${phd2_SRC})
 
 # Add the messages.mo directly in the project such that this triggers a new build

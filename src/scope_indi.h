@@ -1,9 +1,12 @@
 /*
- *  scopes.h
+ *  scope_INDI.cpp
  *  PHD Guiding
  *
- *  Created by Craig Stark.
- *  Copyright (c) 2006-2010 Craig Stark.
+ *  Ported by Hans Lambermont in 2014 from tele_INDI.h which has Copyright (c) 2009 Geoffrey Hausheer.
+ *  All rights reserved.
+ *
+ *  Redraw for libindi/baseclient by Patrick Chevalley
+ *  Copyright (c) 2014 Patrick Chevalley
  *  All rights reserved.
  *
  *  This source code is distributed under the following "BSD" license
@@ -32,48 +35,13 @@
  *
  */
 
-#ifndef SCOPES_H_INCLUDED
-#define SCOPES_H_INCLUDED
+#ifndef SCOPE_INDI_INCLUDED
+#define SCOPE_INDI_INCLUDED
 
-#if defined(__WINDOWS__)
+class INDIScopeFactory
+{
+public:
+    static Scope *MakeINDIScope();
+};
 
-# define GUIDE_ASCOM
-# ifdef HAVE_SHOESTRING
-#  define GUIDE_GPUSB
-#  define GUIDE_GPINT
-# endif
-# define GUIDE_ALPACA
-# define GUIDE_INDI
-
-#elif defined(__APPLE__)
-
-# define GUIDE_GPUSB
-# define GUIDE_GCUSBST4
-# define GUIDE_EQUINOX
-// #define GUIDE_VOYAGER
-// #define GUIDE_NEB
-# define GUIDE_EQMAC
-# define GUIDE_INDI
-
-#elif defined(__linux__) || defined(__FreeBSD__)
-
-# define GUIDE_ALPACA
-# define GUIDE_INDI
-
-#endif // WINDOWS/APPLE/LINUX
-
-#include "scope.h"
-#include "scope_ascom.h"
-#include "scope_gpusb.h"
-#include "scope_gpint.h"
-#include "scope_voyager.h"
-#include "scope_equinox.h"
-#include "scope_eqmac.h"
-#include "scope_GC_USBST4.h"
-#include "scope_alpaca.h"
-#include "scope_manual_pointing.h"
-#ifdef GUIDE_INDI
-# include "scope_indi.h"
 #endif
-
-#endif /* SCOPES_H_INCLUDED */

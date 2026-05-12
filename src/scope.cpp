@@ -335,6 +335,14 @@ static wxString AlpacaMountName()
     return host.empty() ? _("Alpaca Mount") : wxString::Format(_("Alpaca Mount [%s:%ld/%ld]"), host, port, device);
 }
 
+#ifdef GUIDE_INDI
+static wxString INDIMountName()
+{
+    wxString val = pConfig->Profile.GetString("/indi/INDImount", wxEmptyString);
+    return val.empty() ? _("INDI Mount") : wxString::Format(_("INDI Mount [%s]"), val);
+}
+#endif
+
 wxArrayString Scope::MountList()
 {
     wxArrayString ScopeList;

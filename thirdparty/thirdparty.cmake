@@ -477,7 +477,72 @@ endif()
 
 list(APPEND PHD_LINK_EXTERNAL ${wxWidgets_LIBRARIES})
 
-# INDI support removed - Alpaca only build
+#############################################
+#
+#  INDI (all platforms; Windows builds libindi 2.x via vcpkg)
+#
+#############################################
+
+# Allow building with system INDI 1.9.x (e.g. Debian/RPi) at your own risk; default requires 2.0+
+option(PHD2_ALLOW_INDI_1_9 "Allow system INDI 1.9.x (may have API differences)" OFF)
+if(PHD2_ALLOW_INDI_1_9)
+  set(INDI_MIN_VERSION "1.9.0")
+  message(STATUS "PHD2_ALLOW_INDI_1_9: requiring INDI >= ${INDI_MIN_VERSION} (use at your own risk)")
+else()
+  set(INDI_MIN_VERSION "2.0.0")
+endif()
+
+if(USE_SYSTEM_LIBINDI)
+  message(STATUS "Using system's libindi")
+  find_package(INDI ${INDI_MIN_VERSION} REQUIRED)
+  list(APPEND PHD_LINK_EXTERNAL ${INDI_CLIENT_LIBRARIES})
+
+  find_package(ZLIB REQUIRED)
+  list(APPEND PHD_LINK_EXTERNAL ${ZLIB_LIBRARIES})
+
+  find_package(Nova REQUIRED)
+  add_definitions("-DLIBNOVA")
+  include_directories(${NOVA_INCLUDE_DIR})
+  list(APPEND PHD_LINK_EXTERNAL ${NOVA_LIBRARIES})
+else()
+  include(ExternalProject)
+  set(indi_INSTALL_DIR ${CMAKE_BINARY_DIR}/libindi)
+  ExternalProject_Add(
+    indi
+    GIT_REPOSITORY https://github.com/indilib/indi.git
+    GIT_TAG 6aa360543313c9e00819148da9df15647ffa7996  # v2.1.6
+    CMAKE_ARGS -Wno-dev
+      -DINDI_BUILD_SERVER=OFF
+      -DINDI_BUILD_DRIVERS=OFF
+      -DINDI_BUILD_CLIENT=ON
+      -DINDI_BUILD_QT5_CLIENT=OFF
+      -DINDI_BUILD_SHARED=OFF
+      -DCMAKE_PREFIX_PATH=${VCPKG_PREFIX}
+      -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libindi
+      -DCMAKE_CXX_FLAGS=-D_CRT_SECURE_NO_WARNINGS
+      -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+  )
+  include_directories(${indi_INSTALL_DIR}/include)
+  if(WIN32)
+    list(APPEND PHD_LINK_EXTERNAL ${indi_INSTALL_DIR}/lib/indiclient.lib)
+  else()
+    list(APPEND PHD_LINK_EXTERNAL ${indi_INSTALL_DIR}/lib/libindiclient.a)
+    if(APPLE)
+      # MacOS must use a static libnova to avoid introducing a homebrew or macports dylib dependency
+      find_library(LIBNOVA REQUIRED NAMES libnova.a PATHS /usr/local/lib)
+      list(APPEND PHD_LINK_EXTERNAL ${LIBNOVA})
+    else()
+      find_library(LIBNOVA REQUIRED NAMES nova)
+      list(APPEND PHD_LINK_EXTERNAL ${LIBNOVA} z)
+    endif()
+    ## Define LIBNOVA when building Indi from source.
+    add_definitions("-DLIBNOVA")
+  endif()
+  # adding indi as a dependency allows a developer to build phd2 in
+  # the IDE without explicitly building anything else first, but this
+  # slows down incremental development
+  # list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indi)
+endif()
 
 #############################################
 #
