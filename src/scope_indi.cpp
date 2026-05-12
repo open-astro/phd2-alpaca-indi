@@ -195,8 +195,8 @@ void ScopeINDI::CheckState()
 
     Debug.Write(wxString::Format("INDI Telescope is ready "
                                  "MotionRate=%d moveNS=%d moveEW=%d guideNS=%d guideEW=%d coord=%d\n",
-                                 MotionRate_prop ? 1 : 0, moveNS_prop ? 1 : 0, moveEW_prop ? 1 : 0,
-                                 pulseGuideNS_prop ? 1 : 0, pulseGuideEW_prop ? 1 : 0, coord_prop ? 1 : 0));
+                                 MotionRate_prop ? 1 : 0, moveNS_prop ? 1 : 0, moveEW_prop ? 1 : 0, pulseGuideNS_prop ? 1 : 0,
+                                 pulseGuideEW_prop ? 1 : 0, coord_prop ? 1 : 0));
 
     m_ready = true;
 
