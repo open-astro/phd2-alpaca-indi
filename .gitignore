@@ -25,3 +25,6 @@ obj-*/
 __pycache__/
 *.pyc
 *.pyo
+
+# Claude Code per-user settings (not the shared settings.json)
+.claude/settings.local.json
