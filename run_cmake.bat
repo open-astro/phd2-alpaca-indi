@@ -1,4 +1,7 @@
 @mkdir tmp
 @cd tmp
+@set VCPKG_MAX_CONCURRENCY=%NUMBER_OF_PROCESSORS%
+@set CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%
+@set CL=/MP
 cmake -Wno-dev -A Win32 ..
 @cd ..
