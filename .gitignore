@@ -6,9 +6,10 @@ TAGS
 debian/.debhelper/
 debian/debhelper-build-stamp
 debian/files
+debian/*.debhelper
 debian/*.debhelper.log
 debian/*.substvars
-debian/phd2/
+debian/phd2-alpaca/
 
 # dpkg-buildpackage / dh_auto_configure out-of-tree build
 obj-*/
