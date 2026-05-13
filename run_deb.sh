@@ -11,7 +11,7 @@
 # macOS is not yet supported by this script; use build/build-mac for now.
 #
 # Optional env vars:
-#   USE_SYSTEM_LIBINDI=0    fetch and build INDI 2.1.6 from source instead of
+#   USE_SYSTEM_LIBINDI=0    fetch and build INDI 2.2.1.1 from source instead of
 #                           using the distro's libindi-dev. Default: auto —
 #                           uses the system package if pkg-config reports
 #                           libindi >= 2.0.0 (true on Trixie), otherwise
@@ -57,7 +57,7 @@ On Debian 13 Trixie / Raspberry Pi OS Trixie:
       libcurl4-gnutls-dev libopencv-dev libeigen3-dev libgtest-dev
 
 INDI 2.0+ is required. Trixie ships libindi-dev 2.x; if it's installed, the
-build links against it. Otherwise the build fetches and compiles INDI 2.1.6
+build links against it. Otherwise the build fetches and compiles INDI 2.2.1.1
 from source automatically (no manual setup needed).
 EOF
         exit 1
@@ -72,7 +72,7 @@ export CMAKE_BUILD_PARALLEL_LEVEL=$JOBS
 OPENSOURCE_ONLY=${OPENSOURCE_ONLY:-1}
 
 # Auto-detect: prefer the system libindi if it's >= 2.0.0, otherwise fall back
-# to building INDI 2.1.6 from source. Override explicitly with USE_SYSTEM_LIBINDI=0/1.
+# to building INDI 2.2.1.1 from source. Override explicitly with USE_SYSTEM_LIBINDI=0/1.
 if [ -z "${USE_SYSTEM_LIBINDI:-}" ]; then
     if command -v pkg-config >/dev/null 2>&1 && \
        pkg-config --atleast-version=2.0.0 libindi 2>/dev/null; then

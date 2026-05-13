@@ -9,7 +9,7 @@
 # - arm64: produces phd2-alpaca_<ver>_arm64.deb
 #
 # INDI: Trixie ships libindi-dev 2.x in main repos. If the system package is
-# missing or older, debian/rules falls back to building INDI 2.1.6 from source
+# missing or older, debian/rules falls back to building INDI 2.2.1.1 from source
 # automatically (adds ~3-5 min to the first build, no manual setup required).
 
 set -e
@@ -130,7 +130,7 @@ BUILD_DEPS_CORE=(
     gettext zlib1g-dev
 )
 # libindi-dev is intentionally NOT in BUILD_DEPS_CORE: debian/rules falls back
-# to building INDI 2.1.6 from source when the system package is missing or < 2.0.
+# to building INDI 2.2.1.1 from source when the system package is missing or < 2.0.
 BUILD_DEPS_WX=(libwxgtk3.2-dev)
 
 check_deps() {
@@ -146,14 +146,14 @@ check_deps() {
 
     # libindi-dev: any version is fine for the build to proceed. debian/rules
     # auto-detects via pkg-config and either links against the system package
-    # (if >= 2.0.0) or fetches INDI 2.1.6 from source. Just inform the user
+    # (if >= 2.0.0) or fetches INDI 2.2.1.1 from source. Just inform the user
     # which path will be taken so the longer build time isn't a surprise.
     local indi_ver
     indi_ver=$(dpkg -s libindi-dev 2>/dev/null | awk '/^Version:/ { print $2 }')
     if [[ -n "$indi_ver" ]] && dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
-        info "System libindi-dev is $indi_ver (< 2.0); build will fetch INDI 2.1.6 from source."
+        info "System libindi-dev is $indi_ver (< 2.0); build will fetch INDI 2.2.1.1 from source."
     elif [[ -z "$indi_ver" ]]; then
-        info "libindi-dev not installed; build will fetch INDI 2.1.6 from source."
+        info "libindi-dev not installed; build will fetch INDI 2.2.1.1 from source."
     fi
 
     if [[ ${#missing[@]} -gt 0 ]]; then
@@ -161,8 +161,8 @@ check_deps() {
         echo ""
         echo "Install build deps (Debian 13 Trixie / Raspberry Pi OS Trixie):"
         echo "  sudo apt-get install -y build-essential cmake pkg-config debhelper \\"
-        echo "    libwxgtk3.2-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \\"
-        echo "    libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \\"
+        echo "    libwxgtk3.2-dev libcfitsio-dev libopencv-dev libv4l-dev \\"
+        echo "    libnova-dev libcurl4-gnutls-dev \\"
         echo "    libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev"
         echo ""
         echo "Or run: $0 --install-deps"
@@ -175,12 +175,12 @@ install_deps() {
     step "Installing build dependencies..."
     indi_ver=$(dpkg -s libindi-dev 2>/dev/null | awk '/^Version:/ { print $2 }')
     if [[ -z "$indi_ver" ]] || dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
-        info "System libindi-dev is ${indi_ver:-missing} (< 2.0); build will fetch INDI 2.1.6 from source (adds ~3-5 min to first build)."
+        info "System libindi-dev is ${indi_ver:-missing} (< 2.0); build will fetch INDI 2.2.1.1 from source (adds ~3-5 min to first build)."
     fi
     sudo apt-get update
     sudo apt-get install -y build-essential cmake pkg-config debhelper \
-        libwxgtk3.2-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \
-        libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \
+        libwxgtk3.2-dev libcfitsio-dev libopencv-dev libv4l-dev \
+        libnova-dev libcurl4-gnutls-dev \
         libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev
     info "Build dependencies installed."
 }

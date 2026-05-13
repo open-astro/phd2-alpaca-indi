@@ -14,7 +14,7 @@ tag are user actions, not this skill's.
 1. **Sanity-check the working tree.** Run `git status`. If there are unstaged or uncommitted changes, refuse to proceed and ask the user to commit them with `/commit` first. Release commits should contain only the version bump and CHANGELOG closeout — nothing else.
 
 2. **Read the current version** from `version.md`. The file format is:
-   ```
+   ```text
    # Version
 
    1.3.0
@@ -36,7 +36,7 @@ tag are user actions, not this skill's.
    - major: bump the first component, reset the second and third to 0
 
 6. **Gather commit references** for the release. Find the previous release boundary — preferably via the latest semver tag (`git describe --tags --abbrev=0 --match='v[0-9]*' 2>/dev/null`), and if no tag is found fall back to scanning `CHANGELOG.md` for the previous versioned section's commit references and picking up from the most recent one. Run `git log --oneline <prev>..HEAD` to collect everything since. Format as a `### Commit References` block using the same style as existing versioned entries:
-   ```
+   ```text
    - `<short-hash>` - <commit subject>
    ```
 
@@ -46,7 +46,7 @@ tag are user actions, not this skill's.
    - Rename the existing `## [Unreleased]` heading to `## [<new-version>] - <YYYY-MM-DD>` using today's UTC date.
    - Append the `### Commit References` block (from step 6) at the end of that section, after any existing subsections.
    - Insert a fresh empty `## [Unreleased]` section directly above the just-renamed version block, so future `/commit` calls have a place to land. The empty Unreleased should look like:
-     ```
+     ```markdown
      ## [Unreleased]
 
      ```
@@ -55,7 +55,7 @@ tag are user actions, not this skill's.
 9. **Stage both files explicitly** — `git add version.md CHANGELOG.md`. Do not use `git add -A` or `git add .`.
 
 10. **Create the release commit** with a HEREDOC message:
-    ```
+    ```text
     Release <new-version>
 
     See CHANGELOG.md for full release notes.

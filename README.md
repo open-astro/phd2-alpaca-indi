@@ -1,10 +1,10 @@
-# OpenAstro PHD2 Alpaca Build (Unofficial)
+# OpenAstro PHD2 Build (Unofficial)
 
 <img src="icons/oa512.png" alt="OpenAstro Logo" width="125">
 
 ## Overview
 
-This repository contains an OpenAstro-maintained build derived from PHD2 that supports **ASCOM Alpaca** and **INDI** equipment drivers only. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows, with INDI as the alternative path for Linux/Pi rigs and remote INDI servers.
+This repository contains an OpenAstro-maintained build derived from PHD2 that supports **ASCOM Alpaca** and **INDI** equipment drivers only. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows, with [**INDI**](https://indilib.org/) as the alternative path for Linux/Pi rigs and remote INDI servers.
 
 ## Important Notice
 
@@ -47,7 +47,7 @@ Then run the binary at `tmp/phd2.bin` (or via the `tmp/phd2` wrapper). To produc
 INDI 2.0+ is required. `run_deb.sh` auto-detects your system `libindi` via `pkg-config` and picks one of two paths:
 
 - **System libindi ≥ 2.0** (e.g. Ubuntu 24.04+ with the indilib PPA) — the build links against it directly. Fastest incremental builds.
-- **Missing or older libindi** (e.g. Debian trixie stock 1.9.9, Pi OS stock) — the build automatically fetches INDI 2.1.6 and compiles it as a static client library. No manual setup needed; first build adds ~3–5 min for the INDI compile.
+- **Missing or older libindi** (e.g. Debian trixie stock 1.9.9, Pi OS stock) — the build automatically fetches INDI 2.2.1.1 and compiles it as a static client library. No manual setup needed; first build adds ~3–5 min for the INDI compile.
 
 To force a specific path:
 

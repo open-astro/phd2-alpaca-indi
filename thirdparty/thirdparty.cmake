@@ -50,6 +50,15 @@ set(PHD_COPY_EXTERNAL_REL)      # copy for release only
 set(PHD_EXTERNAL_PROJECT_DEPENDENCIES)
 
 if(WIN32)
+  # Reject 32-bit toolchains as early as possible. CMAKE_GENERATOR_PLATFORM
+  # catches the Visual Studio "-A Win32" case, but is empty for Ninja /
+  # Unix Makefiles; CMAKE_SIZEOF_VOID_P (set by project() before this file
+  # is included) catches the actual target bitness regardless of generator.
+  if(DEFINED CMAKE_SIZEOF_VOID_P AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR
+      "Unsupported target architecture: ${CMAKE_SIZEOF_VOID_P}-byte pointers. "
+      "This fork builds x64 only.")
+  endif()
   if(CMAKE_GENERATOR_PLATFORM AND NOT CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
     message(FATAL_ERROR
       "Unsupported generator platform '${CMAKE_GENERATOR_PLATFORM}'. "

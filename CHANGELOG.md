@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stale `https://github.com/open-astro/phd2-alpaca` Homepage URLs in `debian/control` and `debian/phd2-alpaca.service` corrected to `https://github.com/open-astro/phd2-alpaca-indi` so apt's package metadata and the systemd unit's Documentation field point at the right repo.
 - Visual Leak Detector link-directories path in `CMakeLists.txt` updated from `lib/win32` to `lib/Win64` so VLD actually links when present on an x64 build.
 - Debian builds against the new INDI 2.2.1.1 failed at configure with `Could NOT find GSL`. INDI 2.2 introduced `INDI_BUILD_COMMON` (defaults `ON`) which pulls driver-development deps (GSL, USB1, JPEG, Nova, Iconv) that this fork's client-only build doesn't need. Pass `-DINDI_BUILD_COMMON=OFF` in the INDI `ExternalProject_Add` so the dep block is skipped.
+- Stale "INDI 2.1.6" references in `build-deb.sh`, `run_deb.sh`, `debian/rules`, and `README.md` updated to "INDI 2.2.1.1" to match the actual pinned source build.
+- `build-deb.sh` install instructions and `install_deps` apt-get command still listed `libusb-1.0-0-dev` and `libudev-dev` after those were removed from `debian/control`. Now match the actual build requirements.
+- `debian/rules` no longer passes the obsolete `-DUSE_SYSTEM_LIBUSB=1` to `dh_auto_configure`; the option was removed from the CMake project alongside libusb itself.
+- x64 architecture guard in `thirdparty/thirdparty.cmake` now also checks `CMAKE_SIZEOF_VOID_P` in addition to `CMAKE_GENERATOR_PLATFORM`, so 32-bit toolchains can't slip through when using Ninja or Unix Makefiles (where `CMAKE_GENERATOR_PLATFORM` is empty).
+- Fenced code blocks in `.claude/commands/release.md` now carry language tags (`text` / `markdown`) to satisfy markdownlint MD040.
 
 ## [1.3.0] - 2026-05-12
 
