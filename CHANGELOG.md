@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Stale `https://github.com/open-astro/phd2-alpaca` Homepage URLs in `debian/control` and `debian/phd2-alpaca.service` corrected to `https://github.com/open-astro/phd2-alpaca-indi` so apt's package metadata and the systemd unit's Documentation field point at the right repo.
 - Visual Leak Detector link-directories path in `CMakeLists.txt` updated from `lib/win32` to `lib/Win64` so VLD actually links when present on an x64 build.
+- Debian builds against the new INDI 2.2.1.1 failed at configure with `Could NOT find GSL`. INDI 2.2 introduced `INDI_BUILD_COMMON` (defaults `ON`) which pulls driver-development deps (GSL, USB1, JPEG, Nova, Iconv) that this fork's client-only build doesn't need. Pass `-DINDI_BUILD_COMMON=OFF` in the INDI `ExternalProject_Add` so the dep block is skipped.
 
 ## [1.3.0] - 2026-05-12
 
