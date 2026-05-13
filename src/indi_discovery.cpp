@@ -82,7 +82,7 @@ static wxString AddrToString(uint32_t addrHostOrder)
 struct Subnet
 {
     uint32_t network; // host-order
-    uint32_t mask;    // host-order
+    uint32_t mask; // host-order
 };
 
 static std::vector<Subnet> EnumerateLocalSubnets()
@@ -147,7 +147,11 @@ static std::vector<Subnet> EnumerateLocalSubnets()
         // Count leading 1-bits in mask:
         int prefix = 0;
         uint32_t m = mask;
-        while (m & 0x80000000u) { prefix++; m <<= 1; }
+        while (m & 0x80000000u)
+        {
+            prefix++;
+            m <<= 1;
+        }
         if (prefix < 16 || prefix > 30)
         {
             prefix = 24;
@@ -167,8 +171,13 @@ static std::vector<Subnet> EnumerateLocalSubnets()
     {
         bool dup = false;
         for (const auto& u : unique)
-            if (u.network == s.network && u.mask == s.mask) { dup = true; break; }
-        if (!dup) unique.push_back(s);
+            if (u.network == s.network && u.mask == s.mask)
+            {
+                dup = true;
+                break;
+            }
+        if (!dup)
+            unique.push_back(s);
     }
     return unique;
 }
@@ -180,7 +189,8 @@ static bool SetNonBlocking(indi_socket_t s)
     return ioctlsocket(s, FIONBIO, &mode) == 0;
 #else
     int flags = fcntl(s, F_GETFL, 0);
-    if (flags < 0) return false;
+    if (flags < 0)
+        return false;
     return fcntl(s, F_SETFL, flags | O_NONBLOCK) == 0;
 #endif
 }
@@ -249,7 +259,8 @@ static std::vector<uint32_t> ProbeBatch(const std::vector<uint32_t>& addrs, int 
         {
             FD_SET(p.sock, &wfds);
             FD_SET(p.sock, &efds);
-            if (p.sock > maxfd) maxfd = p.sock;
+            if (p.sock > maxfd)
+                maxfd = p.sock;
         }
 
         int sliceMs = wxMin(deadlineMs, 200);
@@ -318,30 +329,33 @@ wxArrayString INDIDiscovery::DiscoverServers(int timeoutSeconds)
             break;
     }
 
-    Debug.Write(wxString::Format("INDIDiscovery: probing %u host(s) for port %u\n",
-                                 static_cast<unsigned int>(targets.size()), INDI_DEFAULT_PORT));
+    Debug.Write(wxString::Format("INDIDiscovery: probing %u host(s) for port %u\n", static_cast<unsigned int>(targets.size()),
+                                 INDI_DEFAULT_PORT));
 
     // Split scan budget across batches. Each batch gets a per-host-equivalent slice.
     int totalMs = timeoutSeconds * 1000;
-    if (totalMs < 500) totalMs = 500;
+    if (totalMs < 500)
+        totalMs = 500;
 
     size_t batches = (targets.size() + INDI_MAX_CONCURRENT - 1) / INDI_MAX_CONCURRENT;
-    if (batches == 0) batches = 1;
+    if (batches == 0)
+        batches = 1;
     int perBatchMs = totalMs / static_cast<int>(batches);
-    if (perBatchMs < 300) perBatchMs = 300;
+    if (perBatchMs < 300)
+        perBatchMs = 300;
 
     std::vector<uint32_t> allHits;
     for (size_t i = 0; i < targets.size(); i += INDI_MAX_CONCURRENT)
     {
-        std::vector<uint32_t> batch(targets.begin() + i,
-                                    targets.begin() + wxMin(i + INDI_MAX_CONCURRENT, targets.size()));
+        std::vector<uint32_t> batch(targets.begin() + i, targets.begin() + wxMin(i + INDI_MAX_CONCURRENT, targets.size()));
         auto hits = ProbeBatch(batch, perBatchMs);
-        Debug.Write(wxString::Format("INDIDiscovery: batch %u/%u (%u hosts, %d ms) -> %u hit(s)\n",
-                                     static_cast<unsigned int>(i / INDI_MAX_CONCURRENT + 1),
-                                     static_cast<unsigned int>((targets.size() + INDI_MAX_CONCURRENT - 1) / INDI_MAX_CONCURRENT),
-                                     static_cast<unsigned int>(batch.size()), perBatchMs,
-                                     static_cast<unsigned int>(hits.size())));
-        for (uint32_t h : hits) allHits.push_back(h);
+        Debug.Write(
+            wxString::Format("INDIDiscovery: batch %u/%u (%u hosts, %d ms) -> %u hit(s)\n",
+                             static_cast<unsigned int>(i / INDI_MAX_CONCURRENT + 1),
+                             static_cast<unsigned int>((targets.size() + INDI_MAX_CONCURRENT - 1) / INDI_MAX_CONCURRENT),
+                             static_cast<unsigned int>(batch.size()), perBatchMs, static_cast<unsigned int>(hits.size())));
+        for (uint32_t h : hits)
+            allHits.push_back(h);
     }
 
     for (uint32_t addr : allHits)

@@ -332,8 +332,8 @@ void INDIConfig::OnDiscover(wxCommandEvent& WXUNUSED(evt))
     wxYieldIfNeeded();
 
     wxArrayString servers = INDIDiscovery::DiscoverServers(2);
-    Debug.Write(wxString::Format("INDIConfig::OnDiscover: found %u server(s)\n",
-                                 static_cast<unsigned int>(servers.GetCount())));
+    Debug.Write(
+        wxString::Format("INDIConfig::OnDiscover: found %u server(s)\n", static_cast<unsigned int>(servers.GetCount())));
 
     if (servers.IsEmpty())
     {
