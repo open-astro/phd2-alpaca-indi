@@ -5,12 +5,31 @@ All notable changes to OpenAstro PHD2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - Unreleased
+## [1.3.0] - 2026-05-12
+
+### Fixed
+- **Alpaca discovery misses loopback-bound servers**
+  - `AlpacaDiscovery::BuildBroadcastTargets()` now always probes `127.0.0.1:32227` as a unicast target so Alpaca servers bound only to loopback (e.g. ASCOM Remote Server's default "Loopback" IP setting) are discovered. Previously these were invisible because subnet broadcasts (255.255.255.255 and per-interface broadcasts) never reach loopback-only listeners — the workaround was to manually edit Remote Server to bind to the LAN IP.
+  - Added Linux/macOS network-interface enumeration via `getifaddrs`. Previously the non-Windows path sent only to `255.255.255.255`, so multi-NIC Linux/Pi setups (VPN, docker, multiple LANs) missed servers on subnets the default route did not cover. Mirrors the Windows `GetAdaptersAddresses` path and the pattern in `indi_discovery.cpp`.
+
+### Removed
+- **`PHD2_ALLOW_INDI_1_9` escape hatch dropped**
+  - INDI 2.0+ is now a hard requirement. Removed the option from `thirdparty/thirdparty.cmake`, the env-var plumbing in `run_deb.sh` / `build-deb.sh`, and the `PHD2_ALLOW_INDI_1_9` make variable in `debian/rules`. The Player One driver and several other INDI drivers have meaningful fixes after 1.9.x; keeping the toggle invited subtly broken builds.
+  - For Debian/Pi systems that only ship INDI 1.9.x, `run_deb.sh` now auto-detects this and falls back to building INDI 2.1.6 from source — no manual PPA setup required.
+
+### Changed
+- **`run_deb.sh` auto-detects libindi version**
+  - The script now calls `pkg-config --atleast-version=2.0.0 libindi` and, if the system libindi is missing or older than 2.0.0, sets `USE_SYSTEM_LIBINDI=0` so CMake fetches and builds INDI 2.1.6 from source as a static client library (no shared libs to bundle). The from-source path was already wired into `thirdparty/thirdparty.cmake`; it just wasn't reachable from `run_deb.sh`. Override with `USE_SYSTEM_LIBINDI=0` or `=1` explicitly.
+  - Removed `libindi-dev` from the dep-suggest message: it's no longer strictly required, since the from-source fallback handles systems without it.
+- **Alpaca port default is now `0` (unconfigured) instead of `6800`**
+  - `pConfig->Profile.GetLong("/alpaca/port", ...)` now defaults to `0` in `cam_alpaca.cpp`, `scope_alpaca.cpp`, `rotator_alpaca.cpp`, `camera.cpp`, `scope.cpp`, `rotator.cpp`, and `event_server.cpp`. The previous `6800` was AlpacaBridge-specific and misleading for users running ASCOM Remote Server (default `11111`) or anything else.
+  - `Connect()` "not yet configured" sentinel in the Alpaca camera/mount/rotator drivers simplified from `host == "localhost" && port == 6800 && device == 0` to just `port == 0`. The old triple-check could spuriously re-open the setup dialog for users genuinely running AlpacaBridge at `localhost:6800` with device 0.
+  - `AlpacaConfig::SetSettings()` renders an unconfigured port as an empty field instead of literal `"0"`. The dialog's existing auto-discover path fires when the server list is empty, so new profiles open with empty fields and discovery immediately populates them — matching NINA's flow.
 
 ### Added
 - **INDI support restored on all platforms**
   - Re-added INDI camera, mount, and rotator drivers (`cam_indi`, `scope_indi`, `rotator_indi`, `config_indi`, `indi_gui`). Available on Windows (via vcpkg-built `indiclient.lib`), macOS, and Linux. AO/stepguider INDI drivers remain removed.
-  - Restored `USE_SYSTEM_LIBINDI=1` and `PHD2_ALLOW_INDI_1_9` toggle for Debian builds; INDI 2.x runtime libs bundled into `/usr/lib/phd2-alpaca`.
+  - Restored `USE_SYSTEM_LIBINDI=1` for Debian builds; INDI 2.x runtime libs bundled into `/usr/lib/phd2-alpaca`.
   - Added `libindi-dev` build dependency to `debian/control`.
 - **INDI server discovery**
   - New `INDIDiscovery` class performs parallel non-blocking TCP probes on port 7624 across local /24 subnets. Total scan ~2s.

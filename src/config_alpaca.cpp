@@ -189,7 +189,8 @@ void AlpacaConfig::SetSettings()
     else
     {
         host->SetValue(m_host);
-        port->SetValue(wxString::Format("%ld", m_port));
+        // Render port=0 (unconfigured) as an empty field rather than literal "0"
+        port->SetValue(m_port > 0 ? wxString::Format("%ld", m_port) : wxString());
 
         // If we have a saved host and port, populate the server list with it
         if (!m_host.IsEmpty() && m_port > 0)

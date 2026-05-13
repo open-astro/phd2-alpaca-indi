@@ -12,14 +12,8 @@ include /usr/share/dpkg/default.mk
 %:
 	dh $@
 
-# Require INDI 2.0+ by default. The Player One driver and several other
-# INDI drivers have meaningful fixes after 1.9.x; building against 1.9 is
-# possible but unsupported.
-#
-# On Debian/RPi stock repos that only ship INDI 1.9.x, add the indi PPA:
-#   sudo apt-add-repository ppa:mutlaqja/ppa
-# Or to build against the older system INDI anyway, set PHD2_ALLOW_INDI_1_9=1.
-PHD2_ALLOW_INDI_1_9 ?= 0
+# INDI 2.0+ is required. On Debian/RPi stock repos that only ship INDI 1.9.x,
+# add the indilib PPA: sudo apt-add-repository ppa:mutlaqja/ppa
 
 override_dh_auto_configure:
 	@set -e; \
@@ -33,7 +27,7 @@ override_dh_auto_configure:
 		echo "Syncing debian/changelog version $$CHANGELOG_VERSION -> $$VERSION"; \
 		sed -i -E "1 s/^phd2-alpaca \\([^)]*\\) /phd2-alpaca ($$VERSION) /" $(CURDIR)/debian/changelog; \
 	fi
-	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=1 -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1 $(if $(filter-out 0,$(PHD2_ALLOW_INDI_1_9)),-DPHD2_ALLOW_INDI_1_9=1,)
+	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=1 -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1
 
 override_dh_auto_install:
 	dh_auto_install
@@ -49,7 +43,6 @@ override_dh_auto_install:
 	fi
 	# Bundle INDI 2.x runtime libs (built from source in the Docker image;
 	# Debian trixie only ships 1.9.9 which is too old).
-	# Skip if INDI libs aren't present (e.g. when building against system INDI 1.9.x).
 	if ls /usr/local/lib/libindi*.so* >/dev/null 2>&1; then \
 		mkdir -p $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca; \
 		find /usr/local/lib -name 'libindi*.so*' ! -type d \

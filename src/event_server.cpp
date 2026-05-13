@@ -1117,7 +1117,7 @@ static void get_alpaca_server(JObj& response, const json_value *params)
 {
     JObj t;
     t << NV("host", pConfig->Profile.GetString("/alpaca/host", _("localhost")))
-      << NV("port", static_cast<int>(pConfig->Profile.GetLong("/alpaca/port", 6800)))
+      << NV("port", static_cast<int>(pConfig->Profile.GetLong("/alpaca/port", 0)))
       << NV("camera_device", static_cast<int>(pConfig->Profile.GetLong("/alpaca/camera_device", 0)))
       << NV("telescope_device", static_cast<int>(pConfig->Profile.GetLong("/alpaca/telescope_device", 0)))
       << NV("rotator_device", static_cast<int>(pConfig->Profile.GetLong("/alpaca/rotator_device", 0)));
@@ -1127,7 +1127,7 @@ static void get_alpaca_server(JObj& response, const json_value *params)
 static void apply_alpaca_choice_if_selected()
 {
     wxString host = pConfig->Profile.GetString("/alpaca/host", _("localhost"));
-    long port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+    long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long cameraDev = pConfig->Profile.GetLong("/alpaca/camera_device", 0);
     long mountDev = pConfig->Profile.GetLong("/alpaca/telescope_device", 0);
     long rotatorDev = pConfig->Profile.GetLong("/alpaca/rotator_device", 0);
@@ -1309,7 +1309,7 @@ static void query_alpaca_devices(JObj& response, const json_value *params)
         typev = p.param("type");
 
     wxString host = pConfig->Profile.GetString("/alpaca/host", _("localhost"));
-    long port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+    long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     wxString requestedType = "ALL";
 
     if (hostv)
@@ -1494,7 +1494,7 @@ static void set_selected_alpaca_device(JObj& response, const json_value *params)
         wxArrayString choices = GuideCamera::GuideCameraList();
         wxString target =
             wxString::Format("Alpaca Camera [%s:%ld/%ld]", pConfig->Profile.GetString("/alpaca/host", _("localhost")),
-                             pConfig->Profile.GetLong("/alpaca/port", 6800), deviceNum);
+                             pConfig->Profile.GetLong("/alpaca/port", 0), deviceNum);
         wxString choice;
         if (FindMatchingChoice(choices, target, &choice))
         {
@@ -1508,7 +1508,7 @@ static void set_selected_alpaca_device(JObj& response, const json_value *params)
         wxArrayString choices = Scope::MountList();
         wxString target =
             wxString::Format(_("Alpaca Mount [%s:%ld/%ld]"), pConfig->Profile.GetString("/alpaca/host", _("localhost")),
-                             pConfig->Profile.GetLong("/alpaca/port", 6800), deviceNum);
+                             pConfig->Profile.GetLong("/alpaca/port", 0), deviceNum);
         wxString choice;
         if (FindMatchingChoice(choices, target, &choice))
         {
@@ -1522,7 +1522,7 @@ static void set_selected_alpaca_device(JObj& response, const json_value *params)
         wxArrayString choices = Rotator::RotatorList();
         wxString target =
             wxString::Format("Alpaca Rotator [%s:%ld/%ld]", pConfig->Profile.GetString("/alpaca/host", _("localhost")),
-                             pConfig->Profile.GetLong("/alpaca/port", 6800), deviceNum);
+                             pConfig->Profile.GetLong("/alpaca/port", 0), deviceNum);
         wxString choice;
         if (FindMatchingChoice(choices, target, &choice))
         {
@@ -1858,7 +1858,7 @@ static void get_alpaca_camera_pixelsize(JObj& response, const json_value *params
         devv = p.param("device");
 
     wxString host = pConfig->Profile.GetString("/alpaca/host", _("localhost"));
-    long port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+    long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long deviceNum = pConfig->Profile.GetLong("/alpaca/camera_device", 0);
 
     if (hostv)

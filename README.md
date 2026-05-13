@@ -4,7 +4,7 @@
 
 ## Overview
 
-This repository contains an OpenAstro-maintained build derived from PHD2 that has ASCOM Alpaca Support. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows.
+This repository contains an OpenAstro-maintained build derived from PHD2 that supports **ASCOM Alpaca** and **INDI** equipment drivers only. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows, with INDI as the alternative path for Linux/Pi rigs and remote INDI servers.
 
 ## Important Notice
 
@@ -14,9 +14,13 @@ This repository contains an OpenAstro-maintained build derived from PHD2 that ha
 
 ## Scope
 
-- ASCOM Alpaca support for cameras, mounts, and rotators
-- INDI support (camera, mount, rotator) for users running Linux/Pi rigs or remote INDI servers
-- Designed to work alongside AlpacaBridge
+This fork supports **only** ASCOM Alpaca and INDI for cameras, mounts, and rotators:
+
+- **ASCOM Alpaca** — cameras, mounts, rotators (network-based; works on Windows, Linux, macOS, Raspberry Pi).
+- **INDI** — cameras, mounts, rotators (native INDI client; ideal for Linux/Pi rigs or remote INDI servers).
+- Designed to work alongside AlpacaBridge.
+
+**Removed compared to upstream PHD2:** native ASCOM (COM/Windows-only), all vendor SDK camera backends (ZWO, QHY, SBIG, Altair, ToupTek, SVBony, PlayerOne, Moravian, etc.), adaptive optics / step-guiders, on-camera ST4, and auxiliary mounts. If you need those, use upstream OpenPHDGuiding/phd2 instead.
 
 ## Building
 
@@ -40,7 +44,19 @@ First clean build takes 10–60 minutes depending on hardware — vcpkg builds O
 
 Then run the binary at `tmp/phd2.bin` (or via the `tmp/phd2` wrapper). To produce an installable `.deb` package instead, use `./build-deb.sh` — that's the full packaging script.
 
-PHD2 requires INDI 2.0+ by default. On systems with only INDI 1.9.x (Ubuntu 22.04 stock, current Pi OS), either add the INDI PPA (`sudo apt-add-repository ppa:mutlaqja/ppa`) or build with `PHD2_ALLOW_INDI_1_9=1 ./run_deb.sh --build`.
+INDI 2.0+ is required. `run_deb.sh` auto-detects your system `libindi` via `pkg-config` and picks one of two paths:
+
+- **System libindi ≥ 2.0** (e.g. Ubuntu 24.04+ with the indilib PPA) — the build links against it directly. Fastest incremental builds.
+- **Missing or older libindi** (e.g. Debian trixie stock 1.9.9, Pi OS stock) — the build automatically fetches INDI 2.1.6 and compiles it as a static client library. No manual setup needed; first build adds ~3–5 min for the INDI compile.
+
+To force a specific path:
+
+```bash
+USE_SYSTEM_LIBINDI=0 ./run_deb.sh --build   # always from-source
+USE_SYSTEM_LIBINDI=1 ./run_deb.sh --build   # always system (fails if < 2.0)
+```
+
+On Ubuntu, the indilib PPA gives you a current libindi without compiling: `sudo add-apt-repository ppa:mutlaqja/ppa && sudo apt update && sudo apt install libindi-dev`. The PPA is Launchpad-only and **does not** resolve on Debian — let the auto-detected from-source fallback handle it instead.
 
 ### macOS
 

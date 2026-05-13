@@ -483,14 +483,7 @@ list(APPEND PHD_LINK_EXTERNAL ${wxWidgets_LIBRARIES})
 #
 #############################################
 
-# Allow building with system INDI 1.9.x (e.g. Debian/RPi) at your own risk; default requires 2.0+
-option(PHD2_ALLOW_INDI_1_9 "Allow system INDI 1.9.x (may have API differences)" OFF)
-if(PHD2_ALLOW_INDI_1_9)
-  set(INDI_MIN_VERSION "1.9.0")
-  message(STATUS "PHD2_ALLOW_INDI_1_9: requiring INDI >= ${INDI_MIN_VERSION} (use at your own risk)")
-else()
-  set(INDI_MIN_VERSION "2.0.0")
-endif()
+set(INDI_MIN_VERSION "2.0.0")
 
 if(USE_SYSTEM_LIBINDI)
   message(STATUS "Using system's libindi")
@@ -538,10 +531,9 @@ else()
     ## Define LIBNOVA when building Indi from source.
     add_definitions("-DLIBNOVA")
   endif()
-  # adding indi as a dependency allows a developer to build phd2 in
-  # the IDE without explicitly building anything else first, but this
-  # slows down incremental development
-  # list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indi)
+  # phd2 must depend on the INDI ExternalProject — otherwise make has no
+  # rule to produce libindiclient.a before the phd2 target tries to link.
+  list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indi)
 endif()
 
 #############################################
