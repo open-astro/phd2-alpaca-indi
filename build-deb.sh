@@ -112,9 +112,11 @@ sync_debian_changelog
 BUILD_DEPS_CORE=(
     build-essential cmake pkg-config debhelper
     libcfitsio-dev libopencv-dev libusb-1.0-0-dev libudev-dev libv4l-dev
-    libnova-dev libcurl4-gnutls-dev libindi-dev libeigen3-dev libgtest-dev
+    libnova-dev libcurl4-gnutls-dev libeigen3-dev libgtest-dev
     gettext zlib1g-dev
 )
+# libindi-dev is intentionally NOT in BUILD_DEPS_CORE: debian/rules falls back
+# to building INDI 2.1.6 from source when the system package is missing or < 2.0.
 BUILD_DEPS_WX=(libwxgtk3.2-dev libwxgtk3.0-dev libwxgtk3.0-gtk3-dev)
 
 check_deps() {
@@ -282,9 +284,11 @@ fi
 # Report result
 # ---------------------------------------------------------------------------
 PARENT_DIR="$(dirname "$ROOT_DIR")"
-# Filename mirrors the Source: name in debian/control (phd2-alpaca). Exclude
-# the dbgsym sibling so we point the user at the installable .deb.
-DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_*_*.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
+# Filename mirrors the Source: name in debian/control (phd2-alpaca). Pin to
+# FULL_VERSION so a stale .deb from a previous version sitting in PARENT_DIR
+# doesn't get reported as this run's output. Exclude the dbgsym sibling so we
+# point the user at the installable .deb.
+DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_${FULL_VERSION}_*.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
 if [[ -n "$DEB" && -f "$DEB" ]]; then
     echo ""
     echo -e "${GREEN}========================================${NC}"
