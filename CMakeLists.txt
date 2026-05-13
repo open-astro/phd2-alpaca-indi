@@ -529,16 +529,9 @@ if(APPLE)
       MACOSX_PACKAGE_LOCATION MacOS
   )
 
-  # Camera-specific frameworks removed - Alpaca only build
-
-  add_custom_command(
-    TARGET phd2
-    POST_BUILD
-    COMMAND mkdir -p $<TARGET_FILE_DIR:phd2>/../Frameworks/
-    COMMAND cp $<TARGET_FILE_DIR:usb_openphd>/libusb_openphd.dylib $<TARGET_FILE_DIR:phd2>/../Frameworks/
-    COMMAND install_name_tool -change @rpath/libusb_openphd.dylib
-                 @executable_path/../Frameworks/libusb_openphd.dylib $<TARGET_FILE:phd2>
-  )
+  # Camera-specific frameworks removed - Alpaca only build.
+  # libusb_openphd bundling removed alongside libusb itself (this fork's
+  # cameras come over Alpaca/INDI; no direct USB access from PHD2).
 
 elseif(WIN32)
 

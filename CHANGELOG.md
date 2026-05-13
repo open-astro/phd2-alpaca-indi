@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WinLibs/x86/` — 9 32-bit redist DLLs and legacy libraries (`msvcr120.dll` VS2013 runtime, `inpout32.dll` legacy port I/O, `wxVidCapLib_wx29`).
 - `thirdparty/VidCapture/` — vendored DirectShow video-capture library (~2003), only compiled on Windows x86 and unreferenced from `src/`.
 - `upload.cmd` — legacy buildbot upload script targeting openphdguiding.org's `phd2buildbot` putty session; not used by this fork's release flow.
+- libusb dependency and the vendored `openssag` StarShoot AutoGuider driver. Neither is reachable from `src/` after the 1.2.0 native-camera-SDK cleanup; this fork's cameras come over Alpaca / INDI / ASCOM, none of which need direct USB. Drops `libusb-1.0-0-dev` and `libudev-dev` from Debian build deps, drops `USE_SYSTEM_LIBUSB` from CMake options and `run_deb.sh`, drops the macOS `libusb_openphd.dylib` framework-copy step, and removes 27 vendored files (`libusb-1.0.21.tar.bz2`, `thirdparty/include/libusb-1.0.21/`, entire `thirdparty/openssag/` tree) plus ~140 lines of CMake wiring.
 
 ### Fixed
 - Stale `https://github.com/open-astro/phd2-alpaca` Homepage URLs in `debian/control` and `debian/phd2-alpaca.service` corrected to `https://github.com/open-astro/phd2-alpaca-indi` so apt's package metadata and the systemd unit's Documentation field point at the right repo.

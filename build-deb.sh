@@ -125,7 +125,7 @@ sync_debian_changelog
 # ---------------------------------------------------------------------------
 BUILD_DEPS_CORE=(
     build-essential cmake pkg-config debhelper
-    libcfitsio-dev libopencv-dev libusb-1.0-0-dev libudev-dev libv4l-dev
+    libcfitsio-dev libopencv-dev libv4l-dev
     libnova-dev libcurl4-gnutls-dev libeigen3-dev libgtest-dev
     gettext zlib1g-dev
 )
