@@ -50,11 +50,12 @@ set(PHD_COPY_EXTERNAL_REL)      # copy for release only
 set(PHD_EXTERNAL_PROJECT_DEPENDENCIES)
 
 if(WIN32)
- if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+  if(CMAKE_GENERATOR_PLATFORM AND NOT CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+    message(FATAL_ERROR
+      "Unsupported generator platform '${CMAKE_GENERATOR_PLATFORM}'. "
+      "This fork builds x64 only; configure with -A x64.")
+  endif()
   set(WINDOWS_ARCH "x64")
- else()
-  set(WINDOWS_ARCH "x86")
- endif()
 endif()
 
 if(APPLE)
@@ -147,54 +148,6 @@ else()
   include_directories(${CFITSIO_INCLUDE_DIR})
   list(APPEND PHD_LINK_EXTERNAL ${CFITSIO_LIBRARIES})
   message(STATUS "Using system's CFITSIO.")
-endif()
-
-##############################################
-# VidCapture
-
-if(WIN32 AND WINDOWS_ARCH STREQUAL "x86")
-
-  set(libvidcap_root ${thirdparty_dir}/VidCapture)
-
-  # copied and adapted from the CMakeLists.txt of cfitsio project. The
-  # sources of the project are left untouched
-
-  file(GLOB VIDCAP_H_FILES "${libvidcap_root}/Source/CVCommon/*.h" "${libvidcap_root}/Source/VidCapture/*.h")
-
-  set(VIDCAP_SRC_FILES
-      Source/VidCapture/CVImage.cpp
-      Source/VidCapture/CVImageGrey.cpp
-      Source/VidCapture/CVImageRGB24.cpp
-      Source/VidCapture/CVImageRGBFloat.cpp
-      Source/VidCapture/CVVidCapture.cpp
-      Source/VidCapture/CVVidCaptureDSWin32.cpp
-      Source/VidCapture/CVDShowUtil.cpp
-      Source/VidCapture/CVFile.cpp
-      Source/VidCapture/CVPlatformWin32.cpp
-      Source/VidCapture/CVTraceWin32.cpp
-  )
-
-  foreach(_src_file IN LISTS VIDCAP_SRC_FILES)
-    list(APPEND VIDCAP_SRC_FILES_rooted ${libvidcap_root}/${_src_file})
-  endforeach()
-
-  add_library(VidCapture STATIC ${VIDCAP_H_FILES} ${VIDCAP_SRC_FILES_rooted})
-  target_include_directories(VidCapture PUBLIC ${libvidcap_root}/Source/CVCommon ${libvidcap_root}/Source/VidCapture)
-
-  target_compile_definitions(
-    VidCapture
-    PRIVATE FF_NO_UNISTD_H
-    PRIVATE _CRT_SECURE_NO_WARNINGS
-    PRIVATE _CRT_SECURE_NO_DEPRECATE)
-
-  set_target_properties(VidCapture PROPERTIES
-                         FOLDER "Thirdparty/")
-
-  # indicating the link and include directives to the main project.
-  # already done by the directive target_include_directories(vidcap PUBLIC
-  # include_directories(${libvidcap_root})
-  list(APPEND PHD_LINK_EXTERNAL VidCapture)
-
 endif()
 
 #############################################
@@ -425,11 +378,7 @@ if(WIN32)
   endif()
 
   set(wxWidgets_ROOT_DIR ${wxWidgets_PREFIX_DIRECTORY})
-  if(WINDOWS_ARCH STREQUAL "x64")
-    set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_x64_lib)
-  else()
-    set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_lib)
-  endif()
+  set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_x64_lib)
   set(wxWidgets_USE_STATIC ON)
   set(wxWidgets_USE_DEBUG ON)
   set(wxWidgets_USE_UNICODE OFF)
@@ -617,15 +566,11 @@ if(WIN32)
     ws2_32.lib
   )
 
-  if(WINDOWS_ARCH STREQUAL "x86")
-   list(APPEND PHD_COPY_EXTERNAL_ALL ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/msvcr120.dll)
-  endif()
-
   list(APPEND PHD_COPY_EXTERNAL_ALL
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/msvcp140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/vcomp140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/vcruntime140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/concrt140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/msvcp140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/vcomp140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/vcruntime140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/concrt140.dll
   )
 
 endif()

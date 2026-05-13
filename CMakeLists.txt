@@ -555,7 +555,7 @@ elseif(WIN32)
   list(APPEND phd2_WIN_SRC ${PHD_PROJECT_ROOT_DIR}/phd.rc)
   source_group(src FILES precompiled_header.cpp)
 
-  link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/win32")
+  link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/Win64")
   add_executable(
     phd2
     WIN32
