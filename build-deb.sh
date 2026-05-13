@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
-# PHD2 .deb Build Script for Ubuntu / Kubuntu / Debian / Raspberry Pi OS
+# PHD2 .deb Build Script for Debian 13 Trixie / Raspberry Pi OS Trixie
 #
-# Builds PHD2 and creates a .deb package. Run on the target architecture:
-# - On PC (x86_64): produces phd2_*_amd64.deb for Ubuntu/Kubuntu
-# - On Raspberry Pi (armv7l/aarch64): produces phd2_*_armhf.deb or phd2_*_arm64.deb
+# Supported host architectures: amd64 (x86_64 servers) or arm64 (Pi 4/5, Pi 3
+# on 64-bit OS). 32-bit ARM (armhf) and i386 are not supported.
 #
-# See: https://github.com/OpenPHDGuiding/phd2/wiki/BuildingPHD2OnLinux
+# Builds PHD2 and creates a .deb for the host architecture:
+# - amd64: produces phd2-alpaca_<ver>_amd64.deb
+# - arm64: produces phd2-alpaca_<ver>_arm64.deb
 #
-# INDI: PHD2 requires libindi-dev >= 2.0. On Ubuntu 22.04/24.04 and Debian
-# Bookworm, add the INDI PPA first, then install deps:
-#   sudo add-apt-repository ppa:mutlaqja/ppa
-#   sudo apt-get update
-#   sudo apt-get install -y libindi-dev  # then other build deps or use --install-deps
+# INDI: Trixie ships libindi-dev 2.x in main repos. If the system package is
+# missing or older, debian/rules falls back to building INDI 2.1.6 from source
+# automatically (adds ~3-5 min to the first build, no manual setup required).
 
 set -e
 
@@ -90,6 +89,22 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 cd "$ROOT_DIR"
 
 # ---------------------------------------------------------------------------
+# Architecture check: we support amd64 and arm64 only.
+# 32-bit ARM (armhf, e.g. Pi Zero / Pi 1 / Pi 2) and i386 are out of scope.
+# ---------------------------------------------------------------------------
+HOST_ARCH=$(dpkg --print-architecture 2>/dev/null || echo unknown)
+case "$HOST_ARCH" in
+    amd64|arm64) ;;
+    armhf|armel)
+        err "Unsupported architecture: ${HOST_ARCH}. This fork builds amd64 and arm64 only. 32-bit ARM hardware (Pi Zero / Pi 1 / Pi 2) is not supported; on a 64-bit-capable Pi (3/4/5) install the 64-bit Raspberry Pi OS instead."
+        ;;
+    *)
+        err "Unsupported architecture: ${HOST_ARCH}. This fork builds amd64 and arm64 only."
+        ;;
+esac
+info "Building for ${HOST_ARCH}"
+
+# ---------------------------------------------------------------------------
 # Extract version from version.md (single source of truth)
 # ---------------------------------------------------------------------------
 step "Extracting version from version.md..."
@@ -106,8 +121,7 @@ info "Detected version: ${FULL_VERSION}"
 sync_debian_changelog
 
 # ---------------------------------------------------------------------------
-# Build dependencies (from debian/control and PHD2 Linux wiki)
-# One of the wx packages is required (3.2 on newer Ubuntu, 3.0 on RPi/older)
+# Build dependencies (from debian/control). Trixie ships wxWidgets 3.2.
 # ---------------------------------------------------------------------------
 BUILD_DEPS_CORE=(
     build-essential cmake pkg-config debhelper
@@ -117,7 +131,7 @@ BUILD_DEPS_CORE=(
 )
 # libindi-dev is intentionally NOT in BUILD_DEPS_CORE: debian/rules falls back
 # to building INDI 2.1.6 from source when the system package is missing or < 2.0.
-BUILD_DEPS_WX=(libwxgtk3.2-dev libwxgtk3.0-dev libwxgtk3.0-gtk3-dev)
+BUILD_DEPS_WX=(libwxgtk3.2-dev)
 
 check_deps() {
     local missing=()
@@ -128,7 +142,7 @@ check_deps() {
     for pkg in "${BUILD_DEPS_WX[@]}"; do
         dpkg -s "$pkg" &>/dev/null && { has_wx=true; break; }
     done
-    $has_wx || missing+=("libwxgtk3.2-dev or libwxgtk3.0-dev")
+    $has_wx || missing+=("libwxgtk3.2-dev")
 
     # libindi-dev: any version is fine for the build to proceed. debian/rules
     # auto-detects via pkg-config and either links against the system package
@@ -145,13 +159,12 @@ check_deps() {
     if [[ ${#missing[@]} -gt 0 ]]; then
         warn "Missing build dependencies: ${missing[*]}"
         echo ""
-        echo "Install build deps (Ubuntu 22.04+ / Debian bookworm/trixie):"
+        echo "Install build deps (Debian 13 Trixie / Raspberry Pi OS Trixie):"
         echo "  sudo apt-get install -y build-essential cmake pkg-config debhelper \\"
         echo "    libwxgtk3.2-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \\"
         echo "    libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \\"
         echo "    libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev"
         echo ""
-        echo "On Raspberry Pi OS or older distros, use libwxgtk3.0-dev instead of libwxgtk3.2-dev."
         echo "Or run: $0 --install-deps"
         return 1
     fi
@@ -162,46 +175,14 @@ install_deps() {
     step "Installing build dependencies..."
     indi_ver=$(dpkg -s libindi-dev 2>/dev/null | awk '/^Version:/ { print $2 }')
     if [[ -z "$indi_ver" ]] || dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
-        # On Ubuntu, the indilib PPA offers a current libindi 2.x without
-        # compiling it. On Debian the PPA doesn't apply, so the build will
-        # fetch INDI 2.1.6 from source automatically (handled by debian/rules).
-        if [[ -f /etc/os-release ]] && grep -q '^ID=ubuntu' /etc/os-release 2>/dev/null && command -v add-apt-repository &>/dev/null; then
-            echo ""
-            echo "System libindi-dev is ${indi_ver:-missing} (< 2.0). On Ubuntu you can"
-            echo "add the indilib PPA to get a current libindi 2.x without compiling:"
-            echo "  sudo add-apt-repository ppa:mutlaqja/ppa"
-            echo "  sudo apt-get update"
-            echo ""
-            echo "Skipping the PPA will make the .deb build fetch INDI 2.1.6 from source"
-            echo "instead (adds ~3-5 min to the first build, no manual setup needed)."
-            echo ""
-            read -r -p "Add INDI PPA now? [y/N] " reply
-            if [[ "${reply,,}" =~ ^y ]]; then
-                sudo add-apt-repository -y ppa:mutlaqja/ppa
-                sudo apt-get update
-            fi
-        elif [[ -f /etc/os-release ]] && grep -q '^ID=debian' /etc/os-release 2>/dev/null; then
-            echo ""
-            echo "System libindi-dev is ${indi_ver:-missing} (< 2.0). The PPA is Ubuntu-only,"
-            echo "so the .deb build will fetch INDI 2.1.6 from source automatically"
-            echo "(adds ~3-5 min to the first build)."
-            echo ""
-        fi
+        info "System libindi-dev is ${indi_ver:-missing} (< 2.0); build will fetch INDI 2.1.6 from source (adds ~3-5 min to first build)."
     fi
     sudo apt-get update
-    if sudo apt-get install -y build-essential cmake pkg-config debhelper \
+    sudo apt-get install -y build-essential cmake pkg-config debhelper \
         libwxgtk3.2-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \
         libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \
-        libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev 2>/dev/null; then
-        info "Build dependencies installed (wx 3.2)."
-    else
-        info "Trying with wx 3.0 (e.g. RPi / older distro)..."
-        sudo apt-get install -y build-essential cmake pkg-config debhelper \
-            libwxgtk3.0-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \
-            libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \
-            libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev
-        info "Build dependencies installed (wx 3.0)."
-    fi
+        libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev
+    info "Build dependencies installed."
 }
 
 # ---------------------------------------------------------------------------
@@ -285,10 +266,10 @@ fi
 # ---------------------------------------------------------------------------
 PARENT_DIR="$(dirname "$ROOT_DIR")"
 # Filename mirrors the Source: name in debian/control (phd2-alpaca). Pin to
-# FULL_VERSION so a stale .deb from a previous version sitting in PARENT_DIR
-# doesn't get reported as this run's output. Exclude the dbgsym sibling so we
-# point the user at the installable .deb.
-DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_${FULL_VERSION}_*.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
+# FULL_VERSION + HOST_ARCH so a stale .deb from a previous version (or a
+# different arch) sitting in PARENT_DIR doesn't get reported as this run's
+# output. Exclude the dbgsym sibling so we point the user at the installable .deb.
+DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_${FULL_VERSION}_${HOST_ARCH}.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
 if [[ -n "$DEB" && -f "$DEB" ]]; then
     echo ""
     echo -e "${GREEN}========================================${NC}"
