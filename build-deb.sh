@@ -125,49 +125,30 @@ check_deps() {
         dpkg -s "$pkg" &>/dev/null && { has_wx=true; break; }
     done
     $has_wx || missing+=("libwxgtk3.2-dev or libwxgtk3.0-dev")
-    # Check libindi-dev version (PHD2 needs >= 2.0)
+
+    # libindi-dev: any version is fine for the build to proceed. debian/rules
+    # auto-detects via pkg-config and either links against the system package
+    # (if >= 2.0.0) or fetches INDI 2.1.6 from source. Just inform the user
+    # which path will be taken so the longer build time isn't a surprise.
     local indi_ver
     indi_ver=$(dpkg -s libindi-dev 2>/dev/null | awk '/^Version:/ { print $2 }')
-    if [[ -n "$indi_ver" ]]; then
-        if dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
-            missing+=("libindi-dev (>= 2.0, you have $indi_ver)")
-        fi
+    if [[ -n "$indi_ver" ]] && dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
+        info "System libindi-dev is $indi_ver (< 2.0); build will fetch INDI 2.1.6 from source."
+    elif [[ -z "$indi_ver" ]]; then
+        info "libindi-dev not installed; build will fetch INDI 2.1.6 from source."
     fi
+
     if [[ ${#missing[@]} -gt 0 ]]; then
         warn "Missing build dependencies: ${missing[*]}"
         echo ""
-        # Debian with only libindi-dev too old: short message, deps already installed
-        if [[ -f /etc/os-release ]] && grep -q '^ID=debian' /etc/os-release 2>/dev/null && \
-           [[ ${#missing[@]} -eq 1 ]] && [[ "${missing[0]}" == *"libindi-dev"* ]]; then
-            echo "PHD2 wants libindi-dev >= 2.0; you have ${indi_ver:-unknown}."
-            echo "All other build deps are installed."
-            echo ""
-            echo "Run: $0 --force   to try building with your current libindi-dev."
-            echo "(Or build INDI 2.x from source from indilib.org if the build fails.)"
-            return 1
-        fi
-        if [[ -f /etc/os-release ]] && grep -q '^ID=debian' /etc/os-release 2>/dev/null; then
-            echo "PHD2 requires libindi-dev >= 2.0. On Debian the INDI PPA does not apply."
-            echo "Options: build INDI 2.x from source (e.g. from indilib.org), or try: $0 --force"
-            echo ""
-        else
-            echo "PHD2 requires libindi-dev >= 2.0. On Ubuntu, add the INDI PPA first:"
-            echo "  sudo add-apt-repository ppa:mutlaqja/ppa"
-            echo "  sudo apt-get update"
-            echo ""
-        fi
-        echo "Then install build deps (Ubuntu 22.04+ / Debian Bookworm/Trixie):"
+        echo "Install build deps (Ubuntu 22.04+ / Debian bookworm/trixie):"
         echo "  sudo apt-get install -y build-essential cmake pkg-config debhelper \\"
         echo "    libwxgtk3.2-dev libcfitsio-dev libopencv-dev libusb-1.0-0-dev \\"
         echo "    libudev-dev libv4l-dev libnova-dev libcurl4-gnutls-dev \\"
         echo "    libindi-dev libeigen3-dev libgtest-dev gettext zlib1g-dev"
         echo ""
         echo "On Raspberry Pi OS or older distros, use libwxgtk3.0-dev instead of libwxgtk3.2-dev."
-        if [[ -f /etc/os-release ]] && grep -q '^ID=debian' /etc/os-release 2>/dev/null; then
-            echo "Or run: $0 --install-deps  to install available deps, or $0 --force to try anyway."
-        else
-            echo "Or run: $0 --install-deps  (after adding the INDI PPA on Ubuntu if needed)"
-        fi
+        echo "Or run: $0 --install-deps"
         return 1
     fi
     return 0
@@ -177,12 +158,18 @@ install_deps() {
     step "Installing build dependencies..."
     indi_ver=$(dpkg -s libindi-dev 2>/dev/null | awk '/^Version:/ { print $2 }')
     if [[ -z "$indi_ver" ]] || dpkg --compare-versions "$indi_ver" lt 2.0 2>/dev/null; then
-        # PPA is Ubuntu-only; skip on Debian (add-apt-repository not available)
+        # On Ubuntu, the indilib PPA offers a current libindi 2.x without
+        # compiling it. On Debian the PPA doesn't apply, so the build will
+        # fetch INDI 2.1.6 from source automatically (handled by debian/rules).
         if [[ -f /etc/os-release ]] && grep -q '^ID=ubuntu' /etc/os-release 2>/dev/null && command -v add-apt-repository &>/dev/null; then
             echo ""
-            echo "PHD2 needs libindi-dev >= 2.0. On Ubuntu, add the INDI PPA first:"
+            echo "System libindi-dev is ${indi_ver:-missing} (< 2.0). On Ubuntu you can"
+            echo "add the indilib PPA to get a current libindi 2.x without compiling:"
             echo "  sudo add-apt-repository ppa:mutlaqja/ppa"
             echo "  sudo apt-get update"
+            echo ""
+            echo "Skipping the PPA will make the .deb build fetch INDI 2.1.6 from source"
+            echo "instead (adds ~3-5 min to the first build, no manual setup needed)."
             echo ""
             read -r -p "Add INDI PPA now? [y/N] " reply
             if [[ "${reply,,}" =~ ^y ]]; then
@@ -191,8 +178,9 @@ install_deps() {
             fi
         elif [[ -f /etc/os-release ]] && grep -q '^ID=debian' /etc/os-release 2>/dev/null; then
             echo ""
-            echo "On Debian, libindi-dev >= 2.0 may not be in the repos. Installing what is available."
-            echo "If the build fails, build INDI 2.x from source or use: $0 --force"
+            echo "System libindi-dev is ${indi_ver:-missing} (< 2.0). The PPA is Ubuntu-only,"
+            echo "so the .deb build will fetch INDI 2.1.6 from source automatically"
+            echo "(adds ~3-5 min to the first build)."
             echo ""
         fi
     fi
@@ -232,7 +220,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --install-deps   Install build dependencies (sudo apt-get) then exit."
             echo "  --clean          Remove build artifacts before building."
-            echo "  --force          Skip build-dependency check (e.g. try with libindi-dev < 2.0 on Debian)."
+            echo "  --force          Skip the build-dependency check entirely."
             echo "  -h, --help       Show this help."
             echo ""
             echo "Examples:"
