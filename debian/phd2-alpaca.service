@@ -1,6 +1,6 @@
 [Unit]
 Description=PHD2 Alpaca Headless Guiding Server
-Documentation=https://github.com/open-astro/phd2-alpaca
+Documentation=https://github.com/open-astro/phd2-alpaca-indi
 After=network-online.target
 Wants=network-online.target
 

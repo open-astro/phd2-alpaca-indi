@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ubuntu PPA guidance, wxWidgets 3.0 fallback paths, and armhf/i386 build support from the Linux build scripts.
 - 32-bit Windows build target. `run_win.bat` now passes `-A x64` and the matching x86 paths in `thirdparty.cmake` / `WinLibs/x86` / `VidCapture` are slated for removal in a follow-up cleanup commit.
 
+### Changed
+- About dialog refreshed: Joey Troy is the sole Project maintainer; Andy Galasso and Bruce Waddington moved to Past maintainers alongside Craig Stark and Bret McKee; `Copyright 2026 OpenAstro` added to the copyright list.
+
+### Fixed
+- Stale `https://github.com/open-astro/phd2-alpaca` Homepage URLs in `debian/control` and `debian/phd2-alpaca.service` corrected to `https://github.com/open-astro/phd2-alpaca-indi` so apt's package metadata and the systemd unit's Documentation field point at the right repo.
+
 ## [1.3.0] - 2026-05-12
 
 ### Fixed

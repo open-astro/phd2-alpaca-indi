@@ -16,7 +16,7 @@ Build-Depends: debhelper-compat (= 13),
                libeigen3-dev,
                libgtest-dev
 Standards-Version: 4.6.2
-Homepage: https://github.com/open-astro/phd2-alpaca
+Homepage: https://github.com/open-astro/phd2-alpaca-indi
 
 Package: phd2-alpaca
 Architecture: any
