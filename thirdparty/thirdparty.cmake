@@ -531,10 +531,9 @@ else()
     ## Define LIBNOVA when building Indi from source.
     add_definitions("-DLIBNOVA")
   endif()
-  # adding indi as a dependency allows a developer to build phd2 in
-  # the IDE without explicitly building anything else first, but this
-  # slows down incremental development
-  # list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indi)
+  # phd2 must depend on the INDI ExternalProject — otherwise make has no
+  # rule to produce libindiclient.a before the phd2 target tries to link.
+  list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indi)
 endif()
 
 #############################################
