@@ -15,9 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **`PHD2_ALLOW_INDI_1_9` escape hatch dropped**
   - INDI 2.0+ is now a hard requirement. Removed the option from `thirdparty/thirdparty.cmake`, the env-var plumbing in `run_deb.sh` / `build-deb.sh`, and the `PHD2_ALLOW_INDI_1_9` make variable in `debian/rules`. The Player One driver and several other INDI drivers have meaningful fixes after 1.9.x; keeping the toggle invited subtly broken builds.
-  - On Debian trixie / Ubuntu 22.04 / Pi OS (which only ship INDI 1.9.x in stock repos), add the indilib PPA before `libindi-dev`: `sudo apt-add-repository ppa:mutlaqja/ppa && sudo apt update`.
+  - For Debian/Pi systems that only ship INDI 1.9.x, `run_deb.sh` now auto-detects this and falls back to building INDI 2.1.6 from source — no manual PPA setup required.
 
 ### Changed
+- **`run_deb.sh` auto-detects libindi version**
+  - The script now calls `pkg-config --atleast-version=2.0.0 libindi` and, if the system libindi is missing or older than 2.0.0, sets `USE_SYSTEM_LIBINDI=0` so CMake fetches and builds INDI 2.1.6 from source as a static client library (no shared libs to bundle). The from-source path was already wired into `thirdparty/thirdparty.cmake`; it just wasn't reachable from `run_deb.sh`. Override with `USE_SYSTEM_LIBINDI=0` or `=1` explicitly.
+  - Removed `libindi-dev` from the dep-suggest message: it's no longer strictly required, since the from-source fallback handles systems without it.
 - **Alpaca port default is now `0` (unconfigured) instead of `6800`**
   - `pConfig->Profile.GetLong("/alpaca/port", ...)` now defaults to `0` in `cam_alpaca.cpp`, `scope_alpaca.cpp`, `rotator_alpaca.cpp`, `camera.cpp`, `scope.cpp`, `rotator.cpp`, and `event_server.cpp`. The previous `6800` was AlpacaBridge-specific and misleading for users running ASCOM Remote Server (default `11111`) or anything else.
   - `Connect()` "not yet configured" sentinel in the Alpaca camera/mount/rotator drivers simplified from `host == "localhost" && port == 6800 && device == 0` to just `port == 0`. The old triple-check could spuriously re-open the setup dialog for users genuinely running AlpacaBridge at `localhost:6800` with device 0.
