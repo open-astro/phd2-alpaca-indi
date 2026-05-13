@@ -60,20 +60,13 @@ if(WIN32)
   set(FIND_LIBRARY_USE_LIB64_PATHS FALSE)
   #set(CMAKE_LIBRARY_ARCHITECTURE x86)
 else()
-  # c++11 options
-  check_cxx_compiler_flag(-std=c++11 HAS_CXX11_FLAG)
-  check_cxx_compiler_flag(-std=c++0x HAS_CXX0X_FLAG)
-
-  if(HAS_CXX11_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  elseif(HAS_CXX0X_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  endif()
+  # C++ standard is configured via CMAKE_CXX_STANDARD in the top-level
+  # CMakeLists.txt; no need to inject -std=c++NN manually here.
 
   if(APPLE)
-    check_cxx_compiler_flag(-stdlib=libc++ HAS_LIBCXX11_FLAG)
+    check_cxx_compiler_flag(-stdlib=libc++ HAS_LIBCXX_FLAG)
 
-    if(HAS_LIBCXX11_FLAG)
+    if(HAS_LIBCXX_FLAG)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
   endif()

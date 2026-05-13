@@ -1011,7 +1011,7 @@ static PierSide CurrentPierSide()
 
 inline static wxString FormatRA(double ra)
 {
-    return math_tools::isNaN(ra) ? _T("unknown") : wxString::Format("%.4f hr", ra);
+    return math_tools::isNaN(ra) ? wxString(_T("unknown")) : wxString::Format("%.4f hr", ra);
 }
 
 void GuideAlgorithmGaussianProcess::GuidingStarted()

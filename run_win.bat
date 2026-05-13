@@ -133,7 +133,7 @@ rem  Configure. For incremental, cmake --build below would also pick up
 rem  CMakeLists changes, but running cmake explicitly surfaces config
 rem  errors earlier and lets -config work on its own.
 rem -----------------------------------------------------------------------
-cmake -Wno-dev -A Win32 ..
+cmake -Wno-dev -A x64 ..
 if errorlevel 1 (
     echo.
     echo CMake configure failed.

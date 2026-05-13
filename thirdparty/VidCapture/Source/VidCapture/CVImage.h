@@ -99,6 +99,7 @@
 
 #include "CVResImage.h"
 #include "CVImageStructs.h"
+#include "CVTrace.h"      // CVAssert() used in inline/template members below
 #ifdef WIN32
    #include <windows.h> // For SetFromWin32Bmp
 #endif

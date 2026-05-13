@@ -910,7 +910,7 @@ static wxString DefectMapMasterPath(int profileId)
 {
     int inst = wxGetApp().GetInstanceNumber();
     return MyFrame::GetDarksDir() + PATHSEPSTR +
-        wxString::Format("PHD2_defect_map_master%s_%d.fit", inst > 1 ? wxString::Format("_%d", inst) : "", profileId);
+        wxString::Format("PHD2_defect_map_master%s_%d.fit", inst > 1 ? wxString::Format("_%d", inst) : wxString(), profileId);
 }
 static wxString DefectMapMasterPath()
 {
@@ -921,7 +921,8 @@ static wxString DefectMapFilterPath(int profileId)
 {
     int inst = wxGetApp().GetInstanceNumber();
     return MyFrame::GetDarksDir() + PATHSEPSTR +
-        wxString::Format("PHD2_defect_map_master_filt%s_%d.fit", inst > 1 ? wxString::Format("_%d", inst) : "", profileId);
+        wxString::Format("PHD2_defect_map_master_filt%s_%d.fit", inst > 1 ? wxString::Format("_%d", inst) : wxString(),
+                         profileId);
 }
 
 static wxString DefectMapFilterPath()
@@ -1191,7 +1192,7 @@ wxString DefectMap::DefectMapFileName(int profileId)
 {
     int inst = wxGetApp().GetInstanceNumber();
     return MyFrame::GetDarksDir() + PATHSEPSTR +
-        wxString::Format("PHD2_defect_map%s_%d.txt", inst > 1 ? wxString::Format("_%d", inst) : "", profileId);
+        wxString::Format("PHD2_defect_map%s_%d.txt", inst > 1 ? wxString::Format("_%d", inst) : wxString(), profileId);
 }
 
 bool DefectMap::ImportFromProfile(int srcId, int destId)
