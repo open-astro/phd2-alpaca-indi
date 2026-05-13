@@ -48,7 +48,7 @@ if(WINDOWS)
 endif()
 
 enable_language(C CXX)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(COMMAND cmake_policy)
@@ -529,16 +529,9 @@ if(APPLE)
       MACOSX_PACKAGE_LOCATION MacOS
   )
 
-  # Camera-specific frameworks removed - Alpaca only build
-
-  add_custom_command(
-    TARGET phd2
-    POST_BUILD
-    COMMAND mkdir -p $<TARGET_FILE_DIR:phd2>/../Frameworks/
-    COMMAND cp $<TARGET_FILE_DIR:usb_openphd>/libusb_openphd.dylib $<TARGET_FILE_DIR:phd2>/../Frameworks/
-    COMMAND install_name_tool -change @rpath/libusb_openphd.dylib
-                 @executable_path/../Frameworks/libusb_openphd.dylib $<TARGET_FILE:phd2>
-  )
+  # Camera-specific frameworks removed - Alpaca only build.
+  # libusb_openphd bundling removed alongside libusb itself (this fork's
+  # cameras come over Alpaca/INDI; no direct USB access from PHD2).
 
 elseif(WIN32)
 
@@ -555,7 +548,7 @@ elseif(WIN32)
   list(APPEND phd2_WIN_SRC ${PHD_PROJECT_ROOT_DIR}/phd.rc)
   source_group(src FILES precompiled_header.cpp)
 
-  link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/win32")
+  link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/Win64")
   add_executable(
     phd2
     WIN32

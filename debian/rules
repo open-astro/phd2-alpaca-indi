@@ -13,7 +13,7 @@ include /usr/share/dpkg/default.mk
 	dh $@
 
 # INDI 2.0+ is required. Auto-detect: use system libindi if it's >= 2.0.0,
-# otherwise fall back to building INDI 2.1.6 from source (via the
+# otherwise fall back to building INDI 2.2.1.1 from source (via the
 # ExternalProject in thirdparty/thirdparty.cmake). Mirrors run_deb.sh so the
 # packaged build and the local build pick the same path on a given host.
 USE_SYSTEM_LIBINDI := $(shell pkg-config --atleast-version=2.0.0 libindi >/dev/null 2>&1 && echo 1 || echo 0)
@@ -33,9 +33,9 @@ override_dh_auto_configure:
 	@if [ "$(USE_SYSTEM_LIBINDI)" = "1" ]; then \
 		echo "debian/rules: USE_SYSTEM_LIBINDI=1 (system libindi >= 2.0.0)"; \
 	else \
-		echo "debian/rules: USE_SYSTEM_LIBINDI=0 (fetching INDI 2.1.6 from source)"; \
+		echo "debian/rules: USE_SYSTEM_LIBINDI=0 (fetching INDI 2.2.1.1 from source)"; \
 	fi
-	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=$(USE_SYSTEM_LIBINDI) -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1
+	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=$(USE_SYSTEM_LIBINDI) -DUSE_SYSTEM_GTEST=1 -DOPENSOURCE_ONLY=1
 
 override_dh_auto_install:
 	dh_auto_install

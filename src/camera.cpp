@@ -115,7 +115,7 @@ static wxString AlpacaCamName()
 static wxString INDICamName()
 {
     wxString indicam = pConfig->Profile.GetString("/indi/INDIcam", wxEmptyString);
-    return indicam.empty() ? _T("INDI Camera") : wxString::Format("INDI Camera [%s]", indicam);
+    return indicam.empty() ? wxString(_T("INDI Camera")) : wxString::Format("INDI Camera [%s]", indicam);
 }
 #endif
 
@@ -891,8 +891,9 @@ wxString GuideCamera::GetSettingsSummary()
         pixelSizeStr = wxString::Format(_("%0.1f um"), m_pixelSize);
 
     return wxString::Format("Camera = %s%s, full size = %d x %d, %s, %s, pixel size = %s\n", Name,
-                            HasGainControl ? wxString::Format(", gain = %d", GuideCameraGain) : "", FrameSize.GetWidth(),
-                            FrameSize.GetHeight(), darkDur ? wxString::Format("have dark, dark dur = %d", darkDur) : "no dark",
+                            HasGainControl ? wxString::Format(", gain = %d", GuideCameraGain) : wxString(),
+                            FrameSize.GetWidth(), FrameSize.GetHeight(),
+                            darkDur ? wxString::Format("have dark, dark dur = %d", darkDur) : wxString("no dark"),
                             CurrentDefectMap ? "defect map in use" : "no defect map", pixelSizeStr);
 }
 

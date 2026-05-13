@@ -47,7 +47,7 @@ Rotator *pRotator;
 static wxString INDIRotatorName()
 {
     wxString indirotator = pConfig->Profile.GetString("/indi/INDIrotator", wxEmptyString);
-    return indirotator.empty() ? _T("INDI Rotator") : wxString::Format("INDI Rotator [%s]", indirotator);
+    return indirotator.empty() ? wxString(_T("INDI Rotator")) : wxString::Format("INDI Rotator [%s]", indirotator);
 }
 #endif
 

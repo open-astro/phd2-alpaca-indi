@@ -50,11 +50,21 @@ set(PHD_COPY_EXTERNAL_REL)      # copy for release only
 set(PHD_EXTERNAL_PROJECT_DEPENDENCIES)
 
 if(WIN32)
- if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+  # Reject 32-bit toolchains as early as possible. CMAKE_GENERATOR_PLATFORM
+  # catches the Visual Studio "-A Win32" case, but is empty for Ninja /
+  # Unix Makefiles; CMAKE_SIZEOF_VOID_P (set by project() before this file
+  # is included) catches the actual target bitness regardless of generator.
+  if(DEFINED CMAKE_SIZEOF_VOID_P AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR
+      "Unsupported target architecture: ${CMAKE_SIZEOF_VOID_P}-byte pointers. "
+      "This fork builds x64 only.")
+  endif()
+  if(CMAKE_GENERATOR_PLATFORM AND NOT CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+    message(FATAL_ERROR
+      "Unsupported generator platform '${CMAKE_GENERATOR_PLATFORM}'. "
+      "This fork builds x64 only; configure with -A x64.")
+  endif()
   set(WINDOWS_ARCH "x64")
- else()
-  set(WINDOWS_ARCH "x86")
- endif()
 endif()
 
 if(APPLE)
@@ -73,8 +83,8 @@ if(WIN32)
   FetchContent_Declare(
     vcpkg
     GIT_REPOSITORY https://github.com/microsoft/vcpkg.git
-    # vcpkg release tag: 2024.11.16
-    GIT_TAG b2cb0da531c2f1f740045bfe7c4dac59f0b2b69c
+    # vcpkg release tag: 2026.03.18
+    GIT_TAG c3867e714dd3a51c272826eea77267876517ed99
     UPDATE_COMMAND bootstrap-vcpkg.bat -disableMetrics
     COMMAND ${CMAKE_COMMAND} -E echo "Building vcpkg cfitsio"
     COMMAND vcpkg install --binarysource=default --no-print-usage cfitsio:${WINDOWS_ARCH}-windows
@@ -149,199 +159,6 @@ else()
   message(STATUS "Using system's CFITSIO.")
 endif()
 
-##############################################
-# VidCapture
-
-if(WIN32 AND WINDOWS_ARCH STREQUAL "x86")
-
-  set(libvidcap_root ${thirdparty_dir}/VidCapture)
-
-  # copied and adapted from the CMakeLists.txt of cfitsio project. The
-  # sources of the project are left untouched
-
-  file(GLOB VIDCAP_H_FILES "${libvidcap_root}/Source/CVCommon/*.h" "${libvidcap_root}/Source/VidCapture/*.h")
-
-  set(VIDCAP_SRC_FILES
-      Source/VidCapture/CVImage.cpp
-      Source/VidCapture/CVImageGrey.cpp
-      Source/VidCapture/CVImageRGB24.cpp
-      Source/VidCapture/CVImageRGBFloat.cpp
-      Source/VidCapture/CVVidCapture.cpp
-      Source/VidCapture/CVVidCaptureDSWin32.cpp
-      Source/VidCapture/CVDShowUtil.cpp
-      Source/VidCapture/CVFile.cpp
-      Source/VidCapture/CVPlatformWin32.cpp
-      Source/VidCapture/CVTraceWin32.cpp
-  )
-
-  foreach(_src_file IN LISTS VIDCAP_SRC_FILES)
-    list(APPEND VIDCAP_SRC_FILES_rooted ${libvidcap_root}/${_src_file})
-  endforeach()
-
-  add_library(VidCapture STATIC ${VIDCAP_H_FILES} ${VIDCAP_SRC_FILES_rooted})
-  target_include_directories(VidCapture PUBLIC ${libvidcap_root}/Source/CVCommon ${libvidcap_root}/Source/VidCapture)
-
-  target_compile_definitions(
-    VidCapture
-    PRIVATE FF_NO_UNISTD_H
-    PRIVATE _CRT_SECURE_NO_WARNINGS
-    PRIVATE _CRT_SECURE_NO_DEPRECATE)
-
-  set_target_properties(VidCapture PROPERTIES
-                         FOLDER "Thirdparty/")
-
-  # indicating the link and include directives to the main project.
-  # already done by the directive target_include_directories(vidcap PUBLIC
-  # include_directories(${libvidcap_root})
-  list(APPEND PHD_LINK_EXTERNAL VidCapture)
-
-endif()
-
-#############################################
-# libusb: linux / apple
-
-if(NOT WIN32)
-
-  set(LIBUSB libusb-1.0.21)
-  set(libusb_root ${thirdparties_deflate_directory}/${LIBUSB})
-  set(USB_build TRUE) # indicates that the USB library is part of the project. Set to FALSE if already existing on the system
-  set(LIBUSB_static TRUE)  # true for static lib, dynamic lib otherwise
-
-  if(NOT EXISTS ${libusb_root})
-    # untar the dependency
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -E tar xf ${thirdparty_dir}/${LIBUSB}.tar.bz2
-      WORKING_DIRECTORY ${thirdparties_deflate_directory})
-  endif()
-
-  set(libusb_dir ${libusb_root}/libusb)
-  # core files
-  set(libUSB_SRC
-    ${libusb_dir}/core.c
-    ${libusb_dir}/descriptor.c
-    ${libusb_dir}/hotplug.c
-    ${libusb_dir}/io.c
-    ${libusb_dir}/sync.c
-    ${libusb_dir}/libusb.h
-    ${libusb_dir}/libusbi.h
-  )
-
-  # platform dependent files
-  if(APPLE)
-    list(APPEND libUSB_SRC
-
-      # platform specific configuration file
-      ${thirdparty_dir}/include/${LIBUSB}
-
-      # platform specific implementation
-      ${libusb_dir}/os/darwin_usb.h
-      ${libusb_dir}/os/darwin_usb.c
-
-      ${libusb_dir}/os/threads_posix.h
-      ${libusb_dir}/os/threads_posix.c
-
-      ${libusb_dir}/os/poll_posix.c
-    )
-    set(${LIBUSB}_additional_compile_definition "OS_DARWIN=1")
-    set(${LIBUSB}_additional_include_dir ${thirdparty_dir}/include/${LIBUSB})
-    # need to build a dynamic libusb since the ZWO SDK requires libusb
-    set(LIBUSB_static FALSE)
-  elseif(WIN32)
-    list(APPEND libUSB_SRC
-
-      # platform specific configuration files
-      ${libusb_root}/msvc/stdint.h
-      ${libusb_root}/msvc/inttypes.h
-      ${libusb_root}/msvc/config.h
-
-      # platform specific implementation
-      ${libusb_dir}/os/windows_winusb.h
-      ${libusb_dir}/os/windows_winusb.c
-
-      ${libusb_dir}/os/threads_windows.h
-      ${libusb_dir}/os/threads_windows.c
-
-      ${libusb_dir}/os/poll_windows.h
-      ${libusb_dir}/os/poll_windows.c
-    )
-    set(${LIBUSB}_additional_compile_definition "OS_WINDOWS=1")
-    set(${LIBUSB}_additional_include_dir ${libusb_root}/msvc/)
-  elseif(UNIX)
-    # libUSB is already an indirect requirement/dependency for phd2 (through libindi).
-    # I (Raffi) personally prefer having the same version
-    # for all platforms, but it should in theory always be better to link against existing libraries
-    # compiled and shipped by skilled people.
-
-    # this would find the libUSB module that is installed on the system.
-    # It requires "sudo apt-get install libusb-1.0-0-dev"
-    if(USE_SYSTEM_LIBUSB)
-      pkg_check_modules(USB_pkg libusb-1.0)
-      include_directories(${USB_pkg_INCLUDE_DIRS})
-      list(APPEND PHD_LINK_EXTERNAL ${USB_pkg_LIBRARIES})
-      set(USB_build FALSE)
-      set(usb_openphd ${USB_pkg_LIBRARIES})
-      message(STATUS "Using system's libUSB.")
-    else(USE_SYSTEM_LIBUSB)
-
-      # in case the library is not installed on the system (as I have on my machines)
-      # try by building the library ourselves
-
-      list(APPEND libUSB_SRC
-
-        # platform specific configuration file
-        ${thirdparty_dir}/include/${LIBUSB}
-
-        # platform specific implementation
-        ${libusb_dir}/os/linux_usbfs.c
-        ${libusb_dir}/os/linux_usbfs.h
-        ${libusb_dir}/os/linux_netlink.c
-
-        ${libusb_dir}/os/threads_posix.h
-        ${libusb_dir}/os/threads_posix.c
-
-        ${libusb_dir}/os/poll_posix.c
-      )
-
-      set(${LIBUSB}_additional_compile_definition "OS_LINUX=1")
-      set(${LIBUSB}_additional_include_dir ${thirdparty_dir}/include/${LIBUSB})
-    endif(USE_SYSTEM_LIBUSB)
-
-  else()
-    message(FATAL_ERROR "libUSB unsupported platform")
-  endif()
-
-  if(${USB_build})
-    include_directories(${libusb_dir})
-
-    # libUSB compilation if OSX or Win32 or not installed on Linux
-    if(LIBUSB_static)
-      add_library(usb_openphd ${libUSB_SRC})
-    else()
-      add_library(usb_openphd SHARED ${libUSB_SRC})
-      # target_link_options requires newer cmake, so fall back to the old LINK_FLAGS target property
-      #   target_link_options(usb_openphd -compatibility_version 2 -current_version 2)
-      set_target_properties(usb_openphd PROPERTIES LINK_FLAGS "-compatibility_version 2 -current_version 2")
-      target_link_libraries(usb_openphd
-        ${coreFoundationFramework}
-        ${iokitFramework}
-        ${libUSB_link_objc}
-      )
-    endif()
-    target_include_directories(usb_openphd PRIVATE ${${LIBUSB}_additional_include_dir})
-    target_compile_definitions(usb_openphd PUBLIC ${${LIBUSB}_additional_compile_definition})
-    set_property(TARGET usb_openphd PROPERTY FOLDER "Thirdparty/")
-
-    if(WIN32)
-      # silence the warnings on externals for win32
-      target_compile_definitions(usb_openphd PRIVATE _CRT_SECURE_NO_WARNINGS)
-    else()
-      target_compile_definitions(usb_openphd PRIVATE LIBUSB_DESCRIBE "")
-    endif()
-    list(APPEND PHD_LINK_EXTERNAL usb_openphd)
-  endif()
-
-endif() # NOT WIN32
-
 #############################################
 # libcurl
 #############################################
@@ -400,7 +217,7 @@ else()
   include(FetchContent)
     FetchContent_Declare(
       googletest
-      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
+      URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz
   )
   # For Windows: Prevent overriding the parent project's compiler/linker settings
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -425,15 +242,11 @@ if(WIN32)
   endif()
 
   set(wxWidgets_ROOT_DIR ${wxWidgets_PREFIX_DIRECTORY})
-  if(WINDOWS_ARCH STREQUAL "x64")
-    set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_x64_lib)
-  else()
-    set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_lib)
-  endif()
+  set(wxWidgets_LIB_DIR ${wxWidgets_ROOT_DIR}/lib/vc_x64_lib)
   set(wxWidgets_USE_STATIC ON)
   set(wxWidgets_USE_DEBUG ON)
   set(wxWidgets_USE_UNICODE OFF)
-  find_package(wxWidgets REQUIRED COMPONENTS propgrid base core aui adv html net)
+  find_package(wxWidgets 3.2 REQUIRED COMPONENTS propgrid base core aui adv html net)
   include(${wxWidgets_USE_FILE})
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
@@ -469,9 +282,9 @@ else()
     endif()
   endif()
 
-  find_package(wxWidgets REQUIRED COMPONENTS aui core base adv html net)
+  find_package(wxWidgets 3.2 REQUIRED COMPONENTS aui core base adv html net)
   if(NOT wxWidgets_FOUND)
-    message(FATAL_ERROR "wxWidgets cannot be found. Please use wx-config prefix")
+    message(FATAL_ERROR "wxWidgets >= 3.2 cannot be found. Please use wx-config prefix")
   endif()
 endif()
 
@@ -503,10 +316,11 @@ else()
   ExternalProject_Add(
     indi
     GIT_REPOSITORY https://github.com/indilib/indi.git
-    GIT_TAG 6aa360543313c9e00819148da9df15647ffa7996  # v2.1.6
+    GIT_TAG 6c99d6c033dbf23f3c8d5772f20720d355755fb1  # v2.2.1.1
     CMAKE_ARGS -Wno-dev
       -DINDI_BUILD_SERVER=OFF
       -DINDI_BUILD_DRIVERS=OFF
+      -DINDI_BUILD_COMMON=OFF
       -DINDI_BUILD_CLIENT=ON
       -DINDI_BUILD_QT5_CLIENT=OFF
       -DINDI_BUILD_SHARED=OFF
@@ -617,15 +431,11 @@ if(WIN32)
     ws2_32.lib
   )
 
-  if(WINDOWS_ARCH STREQUAL "x86")
-   list(APPEND PHD_COPY_EXTERNAL_ALL ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/msvcr120.dll)
-  endif()
-
   list(APPEND PHD_COPY_EXTERNAL_ALL
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/msvcp140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/vcomp140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/vcruntime140.dll
-    ${PHD_PROJECT_ROOT_DIR}/WinLibs/${WINDOWS_ARCH}/concrt140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/msvcp140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/vcomp140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/vcruntime140.dll
+    ${PHD_PROJECT_ROOT_DIR}/WinLibs/x64/concrt140.dll
   )
 
 endif()

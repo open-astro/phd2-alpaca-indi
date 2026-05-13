@@ -93,9 +93,11 @@ ExcepInfo::~ExcepInfo()
     FreeExcep(*this);
 }
 
-bool DispatchClass::dispid(DISPID *ret, IDispatch *idisp, OLECHAR *wname, ExcepInfo *excep)
+bool DispatchClass::dispid(DISPID *ret, IDispatch *idisp, const OLECHAR *wname, ExcepInfo *excep)
 {
-    HRESULT hr = idisp->GetIDsOfNames(IID_NULL, &wname, 1, LOCALE_USER_DEFAULT, ret);
+    // GetIDsOfNames takes LPOLESTR* but does not modify the strings.
+    LPOLESTR mutable_wname = const_cast<LPOLESTR>(wname);
+    HRESULT hr = idisp->GetIDsOfNames(IID_NULL, &mutable_wname, 1, LOCALE_USER_DEFAULT, ret);
     if (FAILED(hr))
     {
         _com_error err(hr);
@@ -105,7 +107,7 @@ bool DispatchClass::dispid(DISPID *ret, IDispatch *idisp, OLECHAR *wname, ExcepI
     return SUCCEEDED(hr);
 }
 
-bool DispatchClass::dispid_cached(DISPID *ret, IDispatch *idisp, OLECHAR *wname, ExcepInfo *excep)
+bool DispatchClass::dispid_cached(DISPID *ret, IDispatch *idisp, const OLECHAR *wname, ExcepInfo *excep)
 {
     wxString name(wname);
 
@@ -147,7 +149,7 @@ void DispatchObj::Attach(IDispatch *idisp, DispatchClass *cls)
     m_idisp = idisp;
 }
 
-bool DispatchObj::Create(OLECHAR *progid)
+bool DispatchObj::Create(const OLECHAR *progid)
 {
     CLSID clsid;
     if (FAILED(CLSIDFromProgID(progid, &clsid)))
@@ -163,7 +165,7 @@ bool DispatchObj::Create(OLECHAR *progid)
     return true;
 }
 
-bool DispatchObj::GetDispatchId(DISPID *ret, OLECHAR *name)
+bool DispatchObj::GetDispatchId(DISPID *ret, const OLECHAR *name)
 {
     if (m_class)
         return m_class->dispid_cached(ret, m_idisp, name, &m_excep);
@@ -184,7 +186,7 @@ bool DispatchObj::GetProp(Variant *res, DISPID dispid)
     return SUCCEEDED(hr);
 }
 
-bool DispatchObj::GetProp(Variant *res, OLECHAR *name)
+bool DispatchObj::GetProp(Variant *res, const OLECHAR *name)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -193,7 +195,7 @@ bool DispatchObj::GetProp(Variant *res, OLECHAR *name)
     return GetProp(res, dispid);
 }
 
-bool DispatchObj::GetProp(Variant *res, OLECHAR *name, int arg)
+bool DispatchObj::GetProp(Variant *res, const OLECHAR *name, int arg)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -215,7 +217,7 @@ bool DispatchObj::GetProp(Variant *res, OLECHAR *name, int arg)
     return SUCCEEDED(hr);
 }
 
-bool DispatchObj::PutProp(OLECHAR *name, OLECHAR *val)
+bool DispatchObj::PutProp(const OLECHAR *name, const OLECHAR *val)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -277,7 +279,7 @@ bool DispatchObj::PutProp(DISPID dispid, double val)
     return SUCCEEDED(hr);
 }
 
-bool DispatchObj::PutProp(OLECHAR *name, bool val)
+bool DispatchObj::PutProp(const OLECHAR *name, bool val)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -285,7 +287,7 @@ bool DispatchObj::PutProp(OLECHAR *name, bool val)
     return PutProp(dispid, val);
 }
 
-bool DispatchObj::InvokeMethod(Variant *res, OLECHAR *name, OLECHAR *arg)
+bool DispatchObj::InvokeMethod(Variant *res, const OLECHAR *name, const OLECHAR *arg)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -325,7 +327,7 @@ bool DispatchObj::InvokeMethod(Variant *res, DISPID dispid, double arg1, double 
     return SUCCEEDED(hr);
 }
 
-bool DispatchObj::InvokeMethod(Variant *res, OLECHAR *name, double arg1, double arg2)
+bool DispatchObj::InvokeMethod(Variant *res, const OLECHAR *name, double arg1, double arg2)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))
@@ -346,7 +348,7 @@ bool DispatchObj::InvokeMethod(Variant *res, DISPID dispid)
     return SUCCEEDED(hr);
 }
 
-bool DispatchObj::InvokeMethod(Variant *res, OLECHAR *name)
+bool DispatchObj::InvokeMethod(Variant *res, const OLECHAR *name)
 {
     DISPID dispid;
     if (!GetDispatchId(&dispid, name))

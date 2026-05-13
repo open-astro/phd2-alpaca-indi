@@ -132,7 +132,7 @@ inline static GuideParity OppositeParity(GuideParity p)
 
 wxString Mount::DeclinationStr(double dec, const wxString& numFormatStr)
 {
-    return dec == UNKNOWN_DECLINATION ? "Unknown" : wxString::Format(numFormatStr, degrees(dec));
+    return dec == UNKNOWN_DECLINATION ? wxString("Unknown") : wxString::Format(numFormatStr, degrees(dec));
 }
 
 wxString Mount::DeclinationStrTr(double dec, const wxString& numFormatStr)
@@ -1872,7 +1872,7 @@ bool Mount::Disconnect()
 
 inline static wxString OrthoErrorStr(const CalibrationDetails& det)
 {
-    return det.IsValid() ? wxString::Format("%.1f deg", det.orthoError) : "unknown";
+    return det.IsValid() ? wxString::Format("%.1f deg", det.orthoError) : wxString("unknown");
 }
 
 wxString Mount::GetSettingsSummary() const

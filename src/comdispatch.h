@@ -67,8 +67,8 @@ class DispatchClass
 public:
     DispatchClass() { }
     ~DispatchClass() { }
-    static bool dispid(DISPID *ret, IDispatch *idisp, OLECHAR *name, ExcepInfo *excep);
-    bool dispid_cached(DISPID *ret, IDispatch *idisp, OLECHAR *name, ExcepInfo *excep);
+    static bool dispid(DISPID *ret, IDispatch *idisp, const OLECHAR *name, ExcepInfo *excep);
+    bool dispid_cached(DISPID *ret, IDispatch *idisp, const OLECHAR *name, ExcepInfo *excep);
 };
 
 class DispatchObj
@@ -83,18 +83,18 @@ public:
     DispatchObj(IDispatch *idisp, DispatchClass *cls);
     ~DispatchObj();
     void Attach(IDispatch *idisp, DispatchClass *cls);
-    bool Create(OLECHAR *progid);
-    bool GetDispatchId(DISPID *ret, OLECHAR *name);
+    bool Create(const OLECHAR *progid);
+    bool GetDispatchId(DISPID *ret, const OLECHAR *name);
     bool GetProp(Variant *res, DISPID dispid);
-    bool GetProp(Variant *res, OLECHAR *name);
-    bool GetProp(Variant *res, OLECHAR *name, int arg);
-    bool PutProp(OLECHAR *name, OLECHAR *val);
+    bool GetProp(Variant *res, const OLECHAR *name);
+    bool GetProp(Variant *res, const OLECHAR *name, int arg);
+    bool PutProp(const OLECHAR *name, const OLECHAR *val);
     bool PutProp(DISPID dispid, bool val);
     bool PutProp(DISPID dispid, double val);
-    bool PutProp(OLECHAR *name, bool val);
-    bool InvokeMethod(Variant *res, OLECHAR *name);
-    bool InvokeMethod(Variant *res, OLECHAR *name, OLECHAR *arg);
-    bool InvokeMethod(Variant *res, OLECHAR *name, double arg1, double arg2);
+    bool PutProp(const OLECHAR *name, bool val);
+    bool InvokeMethod(Variant *res, const OLECHAR *name);
+    bool InvokeMethod(Variant *res, const OLECHAR *name, const OLECHAR *arg);
+    bool InvokeMethod(Variant *res, const OLECHAR *name, double arg1, double arg2);
     bool InvokeMethod(Variant *res, DISPID dispid, double arg1, double arg2);
     bool InvokeMethod(Variant *res, DISPID dispid);
     const EXCEPINFO& Excep() const { return m_excep; }

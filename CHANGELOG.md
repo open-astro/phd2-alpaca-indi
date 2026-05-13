@@ -5,6 +5,40 @@ All notable changes to OpenAstro PHD2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `/release` slash command that bumps `version.md`, closes `## [Unreleased]` into a numbered version section, gathers commit references via `git log`, and creates the release commit.
+
+### Changed
+- `/commit` slash command now appends an entry to `## [Unreleased]` in `CHANGELOG.md` so release notes accumulate per-commit instead of being backfilled at release time.
+- Linux build scripts (`build-deb.sh`, `run_deb.sh`) now target Debian 13 Trixie / Raspberry Pi OS Trixie only, with fail-fast architecture checks rejecting hosts that aren't amd64 or arm64.
+- Windows build modernized: C++14 → C++20, and wxWidgets minimum pinned to 3.2 (was unpinned and silently accepted 3.0). `run_win.bat` now configures with `-A x64`.
+- C++20 conformance fixes across the source tree: ternary common-type ambiguities resolved in seven files (camera, gear_dialog, image_math, mount, myframe, rotator, guide_algorithm_gaussian_process); `DispatchObj` / `DispatchClass` in `comdispatch.h`/`.cpp` now take `const OLECHAR *` to satisfy `/Zc:strictStrings`; missing `#include "CVTrace.h"` added to `thirdparty/VidCapture/Source/VidCapture/CVImage.h` so the `CVAssert` macro is visible to `/permissive-`'s template-body parsing.
+- About dialog refreshed: Joey Troy is the sole Project maintainer; Andy Galasso and Bruce Waddington moved to Past maintainers alongside Craig Stark and Bret McKee; `Copyright 2026 OpenAstro` added to the copyright list.
+- Windows build wiring rewired for x64-only: `thirdparty.cmake` replaces the `WINDOWS_ARCH` x86/x64 detection with a hardcoded `x64` plus a configure-time `FATAL_ERROR` if `-A Win32` (or anything else) is passed; the VidCapture compile block, the x86 wxWidgets lib-dir branch, and the x86-only `msvcr120.dll` copy are all gone. `build-installer.ps1` and `build/build-win` updated for x64-only — `build/build-win`'s `-a arch` option removed since there's only one architecture. `phd2-x86.iss.in` renamed to `phd2.iss.in`.
+- vcpkg pin bumped `2024.11.16` → `2026.03.18` (18 months of port updates in one shot). Notable bundled-library bumps: cfitsio `3.49` → `4.6.3` (major version), curl `8.18.0` → `8.19.0`, plus refreshed OpenCV 4.x and Eigen3. The 2026.03.18 release also carries a security fix for OpenSSL on Windows (ZDI-CAN-29616).
+- libINDI ExternalProject bumped from `v2.1.6` to `v2.2.1.1` (current active 2.2 maintenance line; the 2.1 line dead-ended at v2.1.9). v2.2.1.1 is a same-day hotfix on top of v2.2.1. Verified end-to-end against the INDI-DEV OVA with a Player One camera — server discovery, device connect, and frame capture all clean. This is the line that contains the meaningful Player One driver fixes the 1.3.0 INDI-1.9-removal commit was alluding to.
+- GoogleTest FetchContent pin bumped `v1.14.0` → `v1.17.0` (~33 months of test framework updates in one step). Required floor moves to C++17 (we're on C++20, so already covered). All four existing test executables (`GaussianProcessTest`, `MathToolboxTest`, `GPGuiderTest`, `GuidePerformanceTest`) build and run against the new version.
+
+### Removed
+- Ubuntu PPA guidance, wxWidgets 3.0 fallback paths, and armhf/i386 build support from the Linux build scripts.
+- 32-bit Windows build target. `run_win.bat` now passes `-A x64`.
+- `WinLibs/x86/` — 9 32-bit redist DLLs and legacy libraries (`msvcr120.dll` VS2013 runtime, `inpout32.dll` legacy port I/O, `wxVidCapLib_wx29`).
+- `thirdparty/VidCapture/` — vendored DirectShow video-capture library (~2003), only compiled on Windows x86 and unreferenced from `src/`.
+- `upload.cmd` — legacy buildbot upload script targeting openphdguiding.org's `phd2buildbot` putty session; not used by this fork's release flow.
+- libusb dependency and the vendored `openssag` StarShoot AutoGuider driver. Neither is reachable from `src/` after the 1.2.0 native-camera-SDK cleanup; this fork's cameras come over Alpaca / INDI / ASCOM, none of which need direct USB. Drops `libusb-1.0-0-dev` and `libudev-dev` from Debian build deps, drops `USE_SYSTEM_LIBUSB` from CMake options and `run_deb.sh`, drops the macOS `libusb_openphd.dylib` framework-copy step, and removes 27 vendored files (`libusb-1.0.21.tar.bz2`, `thirdparty/include/libusb-1.0.21/`, entire `thirdparty/openssag/` tree) plus ~140 lines of CMake wiring.
+
+### Fixed
+- Stale `https://github.com/open-astro/phd2-alpaca` Homepage URLs in `debian/control` and `debian/phd2-alpaca.service` corrected to `https://github.com/open-astro/phd2-alpaca-indi` so apt's package metadata and the systemd unit's Documentation field point at the right repo.
+- Visual Leak Detector link-directories path in `CMakeLists.txt` updated from `lib/win32` to `lib/Win64` so VLD actually links when present on an x64 build.
+- Debian builds against the new INDI 2.2.1.1 failed at configure with `Could NOT find GSL`. INDI 2.2 introduced `INDI_BUILD_COMMON` (defaults `ON`) which pulls driver-development deps (GSL, USB1, JPEG, Nova, Iconv) that this fork's client-only build doesn't need. Pass `-DINDI_BUILD_COMMON=OFF` in the INDI `ExternalProject_Add` so the dep block is skipped.
+- Stale "INDI 2.1.6" references in `build-deb.sh`, `run_deb.sh`, `debian/rules`, and `README.md` updated to "INDI 2.2.1.1" to match the actual pinned source build.
+- `build-deb.sh` install instructions and `install_deps` apt-get command still listed `libusb-1.0-0-dev` and `libudev-dev` after those were removed from `debian/control`. Now match the actual build requirements.
+- `debian/rules` no longer passes the obsolete `-DUSE_SYSTEM_LIBUSB=1` to `dh_auto_configure`; the option was removed from the CMake project alongside libusb itself.
+- x64 architecture guard in `thirdparty/thirdparty.cmake` now also checks `CMAKE_SIZEOF_VOID_P` in addition to `CMAKE_GENERATOR_PLATFORM`, so 32-bit toolchains can't slip through when using Ninja or Unix Makefiles (where `CMAKE_GENERATOR_PLATFORM` is empty).
+- Fenced code blocks in `.claude/commands/release.md` now carry language tags (`text` / `markdown`) to satisfy markdownlint MD040.
+
 ## [1.3.0] - 2026-05-12
 
 ### Fixed

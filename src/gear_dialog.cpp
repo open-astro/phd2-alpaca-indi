@@ -1130,7 +1130,7 @@ void GearDialog::OnButtonConnectScope(wxCommandEvent& event)
             pFrame->UpdateStatusBarStateLabels();
         }
 
-        Debug.AddLine("Connected Scope:" + (m_pScope ? m_pScope->Name() : "None"));
+        Debug.AddLine("Connected Scope:" + (m_pScope ? m_pScope->Name() : wxString("None")));
     }
     catch (const wxString& Msg)
     {
@@ -1255,7 +1255,7 @@ void GearDialog::OnButtonConnectRotator(wxCommandEvent& event)
             pFrame->UpdateStatusBarStateLabels();
         }
 
-        Debug.AddLine("Connected Rotator:" + (m_pRotator ? m_pRotator->Name() : "None"));
+        Debug.AddLine("Connected Rotator:" + (m_pRotator ? m_pRotator->Name() : wxString("None")));
     }
     catch (const wxString& Msg)
     {

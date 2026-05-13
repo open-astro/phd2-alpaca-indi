@@ -3,33 +3,32 @@
 usage () {
     cat <<EOF
 usage: build-win [OPTIONS]
+
+Build PHD2 for x64 Windows and produce an Inno Setup installer.
+
 Options:
-  -a arch    build arch: x86|x64 (default: x86)
   -b branch  branch to build (default: current branch)
-  -c         cleanup worktree
-  -w NAME    use worktree NAME
+  -c         cleanup worktree (requires -w)
+  -w NAME    build in worktree NAME (requires -b unless used with -c)
   -h         display this help
 
-Build installer from current directory
-  build-win
+Examples:
+  build-win                          # build current branch in place
+  build-win -b BRANCH -w NAME        # build BRANCH in worktree NAME
+  build-win -c -w NAME               # cleanup worktree NAME
 
-Build installer for a specific branch/tag in a worktree
-  build-win -b BRANCH -w NAME
-
-Cleanup worktree
-  build-win -c -w NAME
+This fork builds x64 only. 32-bit Windows support was dropped alongside
+the C++20 / wxWidgets 3.2 modernization.
 EOF
     exit 1
 }
 
-arch=x86
 do_cleanup=
 branch=
 use_worktree=
 
-while getopts "a:b:chw:" o; do
+while getopts "b:chw:" o; do
     case "${o}" in
-        a) arch=$OPTARG ;;
         b) branch=$OPTARG ;;
         c) do_cleanup=1 ;;
         h) usage ;;
@@ -38,19 +37,10 @@ while getopts "a:b:chw:" o; do
 done
 shift $((OPTIND - 1))
 
-case "$arch" in
-    x86)
-        cmake_arch=Win32
-        installer_arch=
-        build_dir=tmp
-        ;;
-    x64)
-        cmake_arch=x64
-        installer_arch=-x64
-        build_dir=tmp64
-        ;;
-    *) usage ;;
-esac
+# x64 is the only supported architecture for this fork.
+cmake_arch=x64
+installer_arch=-x64
+build_dir=tmp
 
 if [[ $do_cleanup ]]; then
      if [[ ! $use_worktree ]]; then
@@ -108,7 +98,7 @@ EOF
 "$CMD" /c run_cmake.bat
 
 # generate phd2.iss and README.txt in tmp, one level up from Release/
-sed -e "s/@VERSION@/$V/g" ../phd2-${arch}.iss.in >phd2.iss
+sed -e "s/@VERSION@/$V/g" ../phd2.iss.in >phd2.iss
 sed -e "s/@VERSION@/$V/g" ../README-PHD2.txt.in >README-PHD2.txt
 
 "$CMAKE" --build . --config Release
