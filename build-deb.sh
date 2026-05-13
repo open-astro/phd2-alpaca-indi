@@ -62,7 +62,7 @@ sync_debian_changelog() {
     fi
 
     cat > "$tmp_new" <<EOF
-phd2 (${FULL_VERSION}) stable; urgency=low
+phd2-alpaca (${FULL_VERSION}) stable; urgency=low
 
   * Sync package changelog from root CHANGELOG.md for release ${FULL_VERSION}.
   * See CHANGELOG.md for detailed release notes.
@@ -71,8 +71,10 @@ phd2 (${FULL_VERSION}) stable; urgency=low
 EOF
 
     # Preserve older entries, removing existing top stanza if it already matches FULL_VERSION.
+    # Match both the legacy "phd2" and current "phd2-alpaca" source names so existing
+    # changelogs synced by older versions of this script don't end up duplicated.
     awk -v ver="$FULL_VERSION" '
-      NR == 1 && $0 ~ "^phd2 \\(" ver "\\) " { skip = 1; next }
+      NR == 1 && $0 ~ "^phd2(-alpaca)? \\(" ver "\\) " { skip = 1; next }
       skip && /^ -- / { skip = 0; next }
       skip { next }
       { print }
