@@ -8,7 +8,6 @@
 # macOS is not yet supported by this script; use build/build-mac for now.
 #
 # Optional env vars:
-#   PHD2_ALLOW_INDI_1_9=1   build against system INDI 1.9.x (default: 0, requires 2.0+)
 #   OPENSOURCE_ONLY=0       include proprietary camera SDKs (default: 1, none)
 #   JOBS=N                  parallelism (default: detected cores)
 #
@@ -33,8 +32,11 @@ On Debian/Ubuntu:
       wx-common wx3.2-i18n libindi-dev libnova-dev gettext zlib1g-dev libx11-dev \\
       libcurl4-gnutls-dev libopencv-dev libeigen3-dev libgtest-dev
 
-If your distro only ships INDI 1.9.x and you can't add the indilib PPA, set
-PHD2_ALLOW_INDI_1_9=1 before running this script.
+INDI 2.0+ is required. If your distro only ships INDI 1.9.x (Debian trixie,
+Ubuntu 22.04 stock, current Pi OS), add the indilib PPA before installing
+libindi-dev:
+  sudo apt-add-repository ppa:mutlaqja/ppa
+  sudo apt update
 EOF
         exit 1
     fi
@@ -46,7 +48,6 @@ export CMAKE_BUILD_PARALLEL_LEVEL=$JOBS
 
 # Defaults match debian/rules so a local build matches the .deb package.
 OPENSOURCE_ONLY=${OPENSOURCE_ONLY:-1}
-PHD2_ALLOW_INDI_1_9=${PHD2_ALLOW_INDI_1_9:-0}
 
 CMAKE_FLAGS=(
     -Wno-dev
@@ -55,9 +56,6 @@ CMAKE_FLAGS=(
     "-DUSE_SYSTEM_LIBUSB=1"
     "-DOPENSOURCE_ONLY=$OPENSOURCE_ONLY"
 )
-if [ "$PHD2_ALLOW_INDI_1_9" != "0" ]; then
-    CMAKE_FLAGS+=("-DPHD2_ALLOW_INDI_1_9=1")
-fi
 
 rm -rf tmp
 mkdir tmp

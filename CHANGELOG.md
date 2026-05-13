@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AlpacaDiscovery::BuildBroadcastTargets()` now always probes `127.0.0.1:32227` as a unicast target so Alpaca servers bound only to loopback (e.g. ASCOM Remote Server's default "Loopback" IP setting) are discovered. Previously these were invisible because subnet broadcasts (255.255.255.255 and per-interface broadcasts) never reach loopback-only listeners — the workaround was to manually edit Remote Server to bind to the LAN IP.
   - Added Linux/macOS network-interface enumeration via `getifaddrs`. Previously the non-Windows path sent only to `255.255.255.255`, so multi-NIC Linux/Pi setups (VPN, docker, multiple LANs) missed servers on subnets the default route did not cover. Mirrors the Windows `GetAdaptersAddresses` path and the pattern in `indi_discovery.cpp`.
 
+### Removed
+- **`PHD2_ALLOW_INDI_1_9` escape hatch dropped**
+  - INDI 2.0+ is now a hard requirement. Removed the option from `thirdparty/thirdparty.cmake`, the env-var plumbing in `run_deb.sh` / `build-deb.sh`, and the `PHD2_ALLOW_INDI_1_9` make variable in `debian/rules`. The Player One driver and several other INDI drivers have meaningful fixes after 1.9.x; keeping the toggle invited subtly broken builds.
+  - On Debian trixie / Ubuntu 22.04 / Pi OS (which only ship INDI 1.9.x in stock repos), add the indilib PPA before `libindi-dev`: `sudo apt-add-repository ppa:mutlaqja/ppa && sudo apt update`.
+
 ### Changed
 - **Alpaca port default is now `0` (unconfigured) instead of `6800`**
   - `pConfig->Profile.GetLong("/alpaca/port", ...)` now defaults to `0` in `cam_alpaca.cpp`, `scope_alpaca.cpp`, `rotator_alpaca.cpp`, `camera.cpp`, `scope.cpp`, `rotator.cpp`, and `event_server.cpp`. The previous `6800` was AlpacaBridge-specific and misleading for users running ASCOM Remote Server (default `11111`) or anything else.
@@ -21,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **INDI support restored on all platforms**
   - Re-added INDI camera, mount, and rotator drivers (`cam_indi`, `scope_indi`, `rotator_indi`, `config_indi`, `indi_gui`). Available on Windows (via vcpkg-built `indiclient.lib`), macOS, and Linux. AO/stepguider INDI drivers remain removed.
-  - Restored `USE_SYSTEM_LIBINDI=1` and `PHD2_ALLOW_INDI_1_9` toggle for Debian builds; INDI 2.x runtime libs bundled into `/usr/lib/phd2-alpaca`.
+  - Restored `USE_SYSTEM_LIBINDI=1` for Debian builds; INDI 2.x runtime libs bundled into `/usr/lib/phd2-alpaca`.
   - Added `libindi-dev` build dependency to `debian/control`.
 - **INDI server discovery**
   - New `INDIDiscovery` class performs parallel non-blocking TCP probes on port 7624 across local /24 subnets. Total scan ~2s.

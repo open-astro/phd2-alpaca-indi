@@ -283,8 +283,6 @@ fi
 step "Building PHD2 .deb package..."
 # -us -uc = do not sign source and changes; -d = allow unmet build deps when --force
 if "$FORCE"; then
-    export PHD2_ALLOW_INDI_1_9=1
-    info "PHD2_ALLOW_INDI_1_9=1: allowing system INDI 1.9.x (use at your own risk)"
     dpkg-buildpackage -us -uc -b -d
 else
     dpkg-buildpackage -us -uc -b

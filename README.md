@@ -40,7 +40,13 @@ First clean build takes 10–60 minutes depending on hardware — vcpkg builds O
 
 Then run the binary at `tmp/phd2.bin` (or via the `tmp/phd2` wrapper). To produce an installable `.deb` package instead, use `./build-deb.sh` — that's the full packaging script.
 
-PHD2 requires INDI 2.0+ by default. On systems with only INDI 1.9.x (Ubuntu 22.04 stock, current Pi OS), either add the INDI PPA (`sudo apt-add-repository ppa:mutlaqja/ppa`) or build with `PHD2_ALLOW_INDI_1_9=1 ./run_deb.sh --build`.
+PHD2 requires INDI 2.0+. On systems with only INDI 1.9.x (Debian trixie, Ubuntu 22.04 stock, current Pi OS), add the indilib PPA before installing `libindi-dev`:
+
+```bash
+sudo apt-add-repository ppa:mutlaqja/ppa
+sudo apt update
+sudo apt install libindi-dev
+```
 
 ### macOS
 
