@@ -434,6 +434,8 @@ list(APPEND phd2_SRC
     ${phd_src_dir}/config_indi.h
     ${phd_src_dir}/indi_gui.cpp
     ${phd_src_dir}/indi_gui.h
+    ${phd_src_dir}/indi_discovery.cpp
+    ${phd_src_dir}/indi_discovery.h
 )
 source_group(src FILES ${phd2_SRC})
 

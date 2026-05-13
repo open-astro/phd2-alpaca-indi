@@ -61,6 +61,9 @@ class INDIConfig : public wxDialog, public INDI::BaseClient
 
     wxTextCtrl *host;
     wxTextCtrl *port;
+    wxButton *discoverButton;
+    wxStaticText *discoverStatus;
+    wxComboBox *serverList;
     wxButton *connect;
     wxStaticText *connect_status;
     wxStaticText *devlabel;
@@ -96,6 +99,8 @@ public:
 
     void OnUpdateFromThread(wxThreadEvent& event);
 
+    bool Show(bool show = true) override;
+
 protected:
     void newDevice(INDI::BaseDevice dp) override;
     void removeDevice(INDI::BaseDevice dp) override {};
@@ -110,6 +115,8 @@ private:
     void OnDevSelected(wxCommandEvent& evt);
     void OnVerboseChecked(wxCommandEvent& evt);
     void OnForceVideoChecked(wxCommandEvent& evt);
+    void OnDiscover(wxCommandEvent& evt);
+    void OnServerSelected(wxCommandEvent& evt);
     void UpdateControlStates();
 
     wxDECLARE_EVENT_TABLE();

@@ -281,7 +281,10 @@ void CameraINDI::updateLastFrame(IBLOB *blob)
 void CameraINDI::CheckState()
 {
     // Check if the device has all the required properties for our usage.
-    if (has_blob && camera_device && Connected && (expose_prop || video_prop))
+    // ccdinfo_prop is required so m_maxSize is populated before the first
+    // Capture() runs — otherwise the first exposure sends FRAME with width=0
+    // and the driver disconnects.
+    if (has_blob && camera_device && Connected && (expose_prop || video_prop) && ccdinfo_prop)
     {
         if (!ready)
         {
@@ -1262,6 +1265,16 @@ bool CameraINDI::GetDevicePixelSize(double *devPixelSize)
 {
     if (!Connected)
         return true; // error
+
+    // CCD_INFO arrives asynchronously after the camera reports ready; the wizard
+    // typically reads pixel size right after Connect() returns. Wait briefly for
+    // the property to arrive so the wizard can auto-populate the field.
+    if (PixSize == 0.0)
+    {
+        wxLongLong start = wxGetUTCTimeMillis();
+        while (PixSize == 0.0 && wxGetUTCTimeMillis() - start < 2000)
+            wxMilliSleep(20);
+    }
 
     *devPixelSize = PixSize;
     return false;

@@ -43,6 +43,7 @@
 #if defined(INDI_CAMERA) || defined(GUIDE_INDI)
 
 # include "config_indi.h"
+# include "indi_discovery.h"
 
 # include <wx/sizer.h>
 # include <wx/gbsizer.h>
@@ -58,6 +59,8 @@ enum
     MDEV = 103,
     VERBOSE = 104,
     FORCEVIDEO = 105,
+    MDISCOVER = 106,
+    MSERVERLIST = 107,
 };
 
 # define POS(r, c) wxGBPosition(r, c)
@@ -81,6 +84,21 @@ INDIConfig::INDIConfig(wxWindow *parent, const wxString& title, IndiDevType devt
 
     pos = 0;
     gbs->Add(new wxStaticText(this, wxID_ANY, _("INDI Server")), POS(pos, 0), SPAN(1, 1), sizerSectionFlags, border);
+
+    ++pos;
+    // Discover button + status (left and right of one row)
+    wxBoxSizer *discoverSizer = new wxBoxSizer(wxHORIZONTAL);
+    discoverButton = new wxButton(this, MDISCOVER, _("Discover Servers"));
+    discoverSizer->Add(discoverButton, 0, wxALL, border);
+    discoverStatus = new wxStaticText(this, wxID_ANY, wxEmptyString);
+    discoverSizer->Add(discoverStatus, 0, wxALL | wxALIGN_CENTER_VERTICAL, border);
+    gbs->Add(discoverSizer, POS(pos, 0), SPAN(1, 2), wxALIGN_LEFT | wxALL, border);
+
+    ++pos;
+    gbs->Add(new wxStaticText(this, wxID_ANY, _("Discovered Servers")), POS(pos, 0), SPAN(1, 1), sizerLabelFlags, border);
+    serverList = new wxComboBox(this, MSERVERLIST, wxEmptyString, wxDefaultPosition, wxSize(250, -1), 0, nullptr,
+                                wxCB_DROPDOWN | wxCB_READONLY);
+    gbs->Add(serverList, POS(pos, 1), SPAN(1, 1), sizerTextFlags, border);
 
     ++pos;
     gbs->Add(new wxStaticText(this, wxID_ANY, _("Hostname")), POS(pos, 0), SPAN(1, 1), sizerLabelFlags, border);
@@ -231,7 +249,9 @@ wxDEFINE_EVENT(THREAD_UPDATE_EVENT, wxThreadEvent);
 wxBEGIN_EVENT_TABLE(INDIConfig, wxDialog)
     EVT_BUTTON(MCONNECT, INDIConfig::OnConnectButton)
     EVT_BUTTON(MINDIGUI, INDIConfig::OnIndiGui)
+    EVT_BUTTON(MDISCOVER, INDIConfig::OnDiscover)
     EVT_COMBOBOX(MDEV, INDIConfig::OnDevSelected)
+    EVT_COMBOBOX(MSERVERLIST, INDIConfig::OnServerSelected)
     EVT_CHECKBOX(VERBOSE, INDIConfig::OnVerboseChecked)
     EVT_CHECKBOX(FORCEVIDEO, INDIConfig::OnForceVideoChecked)
     EVT_THREAD(THREAD_UPDATE_EVENT, INDIConfig::OnUpdateFromThread)
@@ -298,6 +318,81 @@ void INDIConfig::OnForceVideoChecked(wxCommandEvent& evt)
     {
         forceexposure->SetValue(false);
     }
+}
+
+void INDIConfig::OnDiscover(wxCommandEvent& WXUNUSED(evt))
+{
+    Debug.Write("INDIConfig::OnDiscover: scanning local subnets for port 7624\n");
+
+    discoverStatus->SetLabel(_("Discovering..."));
+    discoverButton->Enable(false);
+    serverList->Clear();
+    // Force the label to repaint before we block on the scan.
+    Update();
+    wxYieldIfNeeded();
+
+    wxArrayString servers = INDIDiscovery::DiscoverServers(2);
+    Debug.Write(wxString::Format("INDIConfig::OnDiscover: found %u server(s)\n",
+                                 static_cast<unsigned int>(servers.GetCount())));
+
+    if (servers.IsEmpty())
+    {
+        discoverStatus->SetLabel(_("No servers found"));
+    }
+    else
+    {
+        for (size_t i = 0; i < servers.GetCount(); ++i)
+            serverList->Append(servers[i]);
+        serverList->SetSelection(0);
+        discoverStatus->SetLabel(wxString::Format(_("Found %u"), static_cast<unsigned int>(servers.GetCount())));
+
+        // Auto-fill the host/port fields with the first hit.
+        wxString h;
+        long p;
+        if (INDIDiscovery::ParseServerString(servers[0], h, p))
+        {
+            host->SetValue(h);
+            port->SetValue(wxString::Format("%ld", p));
+        }
+    }
+
+    discoverButton->Enable(true);
+}
+
+void INDIConfig::OnServerSelected(wxCommandEvent& WXUNUSED(evt))
+{
+    wxString serverStr = serverList->GetValue();
+    wxString h;
+    long p;
+    if (INDIDiscovery::ParseServerString(serverStr, h, p))
+    {
+        host->SetValue(h);
+        port->SetValue(wxString::Format("%ld", p));
+    }
+}
+
+bool INDIConfig::Show(bool show)
+{
+    bool result = wxDialog::Show(show);
+
+    if (!show || isServerConnected())
+        return result;
+
+    // Auto-discover if the user has not yet configured a server. We only fire
+    // when the host field is empty so we don't kick off a scan every time the
+    // dialog opens for an already-configured profile.
+    CallAfter(
+        [this]()
+        {
+            if (host->GetLineText(0).IsEmpty() && serverList->GetCount() == 0)
+            {
+                Debug.Write("INDIConfig::Show: auto-discovering INDI servers\n");
+                wxCommandEvent evt;
+                OnDiscover(evt);
+            }
+        });
+
+    return result;
 }
 
 void INDIConfig::Connect()
