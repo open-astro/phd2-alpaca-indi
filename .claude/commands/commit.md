@@ -29,7 +29,7 @@ captures *why* the change exists.
    - **Subject (≤72 chars):** what changed in plain language. Imperative mood. No type prefix unless recent commits use one.
    - **Blank line.**
    - **Body:** explain the *why* — what failure mode this fixes, what user-visible behavior changes, why this approach was chosen over alternatives. Bullet points for multi-part changes. Mention non-obvious tradeoffs.
-   - **Co-author trailer:** `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`
+   - **Co-author trailer (optional):** add `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>` only when Claude materially co-authored the change. For commits the user wrote themselves and is just running through this command, omit it — false attribution clutters audit/blame history.
 
 6. **Create the commit** with the HEREDOC message. Do not amend an existing commit unless the user explicitly asks. Do not use `--no-verify`.
 

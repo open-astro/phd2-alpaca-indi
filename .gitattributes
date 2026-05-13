@@ -1,2 +1,6 @@
 # Force CRLF line endings on Windows batch files
 *.bat text eol=crlf
+
+# Force LF for shell scripts so they execute on Linux/macOS even when
+# the working tree was checked out on Windows.
+*.sh text eol=lf

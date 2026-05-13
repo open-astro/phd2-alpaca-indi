@@ -12,7 +12,15 @@ include /usr/share/dpkg/default.mk
 %:
 	dh $@
 
-# Set PHD2_ALLOW_INDI_1_9=1 in the environment to allow building with system INDI 1.9.x (e.g. Debian/RPi)
+# Require INDI 2.0+ by default. The Player One driver and several other
+# INDI drivers have meaningful fixes after 1.9.x; building against 1.9 is
+# possible but unsupported.
+#
+# On Debian/RPi stock repos that only ship INDI 1.9.x, add the indi PPA:
+#   sudo apt-add-repository ppa:mutlaqja/ppa
+# Or to build against the older system INDI anyway, set PHD2_ALLOW_INDI_1_9=1.
+PHD2_ALLOW_INDI_1_9 ?= 0
+
 override_dh_auto_configure:
 	@set -e; \
 	VERSION="$$(grep -E '^[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+([A-Za-z0-9._-]*)[[:space:]]*$$' $(CURDIR)/version.md | head -1 | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$$//')"; \
@@ -25,7 +33,7 @@ override_dh_auto_configure:
 		echo "Syncing debian/changelog version $$CHANGELOG_VERSION -> $$VERSION"; \
 		sed -i -E "1 s/^phd2-alpaca \\([^)]*\\) /phd2-alpaca ($$VERSION) /" $(CURDIR)/debian/changelog; \
 	fi
-	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=1 -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1 $(if $(PHD2_ALLOW_INDI_1_9),-DPHD2_ALLOW_INDI_1_9=1,)
+	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=1 -DUSE_SYSTEM_GTEST=1 -DUSE_SYSTEM_LIBUSB=1 -DOPENSOURCE_ONLY=1 $(if $(filter-out 0,$(PHD2_ALLOW_INDI_1_9)),-DPHD2_ALLOW_INDI_1_9=1,)
 
 override_dh_auto_install:
 	dh_auto_install

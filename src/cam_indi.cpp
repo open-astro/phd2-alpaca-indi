@@ -36,6 +36,8 @@
 
 #include "phd.h"
 
+#include <atomic>
+
 #ifdef INDI_CAMERA
 
 # include "cam_indi.h"
@@ -121,11 +123,13 @@ private:
 
     usImage *StackImg;
     int StackFrames;
-    volatile bool stacking; // TODO: use a wxCondition to signal completion
+    // Cross-thread flags: INDI client callback thread sets, capture/connect thread polls.
+    // std::atomic gives proper memory ordering; volatile alone does not.
+    std::atomic<bool> stacking;
     bool has_blob;
     bool has_old_videoprop;
     bool first_frame;
-    volatile bool modal;
+    std::atomic<bool> modal;
     bool ready;
     wxByte m_bitsPerPixel;
     double PixSize;
@@ -186,6 +190,8 @@ public:
 CameraINDI::CameraINDI() : sync_cond(sync_lock), m_lastFrame_cond(m_lastFrame_lock), m_gui(nullptr)
 {
     m_lastFrame = nullptr;
+    stacking = false;
+    modal = false;
     ClearStatus();
     // load the values from the current profile
     INDIhost = pConfig->Profile.GetString("/indi/INDIhost", _T("localhost"));

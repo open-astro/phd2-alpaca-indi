@@ -1,3 +1,5 @@
 #!/bin/sh
-export LD_LIBRARY_PATH="@CMAKE_INSTALL_PREFIX@/lib/phd2${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Prefer phd2-alpaca dir (where Debian bundles INDI 2.x libs); fall back to
+# the legacy phd2 dir for upstream-compatible installs.
+export LD_LIBRARY_PATH="@CMAKE_INSTALL_PREFIX@/lib/phd2-alpaca:@CMAKE_INSTALL_PREFIX@/lib/phd2${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$0.bin" "$@"

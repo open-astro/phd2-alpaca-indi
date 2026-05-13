@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Windows build**
-  - Bumped pinned vcpkg to release tag `2024.11.16` (SHA-pinned). Parallelized the Windows build invocation in `run_cmake.bat` so multi-core machines actually use their cores.
+  - Bumped pinned vcpkg to release tag `2024.11.16` (SHA-pinned). Parallelized the Windows build invocation in `run_win.bat` (renamed from `run_cmake.bat`) so multi-core machines actually use their cores. Added flags: `-rebuild`, `-config`, `-launch`. Added Linux counterpart `run_deb.sh`.
   - Enforced CRLF for `.bat` files via `.gitattributes` to keep the Windows build script intact across platforms.
 - **Wrapper script and systemd service**
   - Restored `LD_LIBRARY_PATH=/usr/lib/phd2-alpaca` in `debian/phd2-alpaca.service` and `phd2.sh.in` so bundled INDI 2.x libs are discoverable at runtime.

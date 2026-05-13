@@ -358,8 +358,13 @@ void ScopeINDI::serverDisconnected(int exit_code)
     // in case the connection lost we must reset the client socket
     if (exit_code == -1)
     {
-        pFrame->Alert(_("INDI server disconnected"));
-        Disconnect();
+        // This is called on the INDI client thread; UI calls must hop to the main thread.
+        PhdApp::ExecInMainThread(
+            [this]()
+            {
+                pFrame->Alert(_("INDI server disconnected"));
+                Disconnect();
+            });
     }
 }
 
