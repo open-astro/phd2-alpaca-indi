@@ -91,6 +91,12 @@ bool ScopeAlpaca::Connect()
             m_host = pConfig->Profile.GetString("/alpaca/host", _T("localhost"));
             m_port = pConfig->Profile.GetLong("/alpaca/port", 0);
             m_deviceNumber = pConfig->Profile.GetLong("/alpaca/telescope_device", 0);
+            // If still unconfigured after setup, user probably cancelled - don't try to connect
+            if (m_port == 0)
+            {
+                Debug.Write("Alpaca Mount: Setup cancelled or not configured, skipping connection\n");
+                throw ERROR_INFO("Alpaca Mount: Setup cancelled or not configured");
+            }
         }
 
         if (!m_client)

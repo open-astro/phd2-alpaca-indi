@@ -57,7 +57,9 @@ static wxString AlpacaRotatorName()
     wxString host = pConfig->Profile.GetString("/alpaca/host", wxEmptyString);
     long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long device = pConfig->Profile.GetLong("/alpaca/rotator_device", 0);
-    return host.empty() ? _T("Alpaca Rotator") : wxString::Format("Alpaca Rotator [%s:%ld/%ld]", host, port, device);
+    if (host.empty() || port <= 0)
+        return _T("Alpaca Rotator");
+    return wxString::Format("Alpaca Rotator [%s:%ld/%ld]", host, port, device);
 }
 #endif
 

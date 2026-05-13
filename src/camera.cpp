@@ -106,7 +106,9 @@ static wxString AlpacaCamName()
     wxString host = pConfig->Profile.GetString("/alpaca/host", wxEmptyString);
     long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long device = pConfig->Profile.GetLong("/alpaca/camera_device", 0);
-    return host.empty() ? _T("Alpaca Camera") : wxString::Format("Alpaca Camera [%s:%ld/%ld]", host, port, device);
+    if (host.empty() || port <= 0)
+        return _T("Alpaca Camera");
+    return wxString::Format("Alpaca Camera [%s:%ld/%ld]", host, port, device);
 }
 
 #if defined(INDI_CAMERA)

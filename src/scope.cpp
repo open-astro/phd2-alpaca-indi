@@ -332,7 +332,9 @@ static wxString AlpacaMountName()
     wxString host = pConfig->Profile.GetString("/alpaca/host", wxEmptyString);
     long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long device = pConfig->Profile.GetLong("/alpaca/telescope_device", 0);
-    return host.empty() ? _("Alpaca Mount") : wxString::Format(_("Alpaca Mount [%s:%ld/%ld]"), host, port, device);
+    if (host.empty() || port <= 0)
+        return _("Alpaca Mount");
+    return wxString::Format(_("Alpaca Mount [%s:%ld/%ld]"), host, port, device);
 }
 
 #ifdef GUIDE_INDI
