@@ -1,3 +1,15 @@
+phd2-alpaca (1.3.0) UNRELEASED; urgency=low
+
+  * Re-add INDI camera, mount, and rotator support on all platforms.
+  * Add INDI server auto-discovery (subnet probe on port 7624).
+  * Fix INDI camera first-exposure disconnect by waiting for CCD_INFO.
+  * Auto-populate pixel size in profile wizard for INDI cameras.
+  * Bump pinned vcpkg to 2024.11.16 and parallelize Windows build.
+  * Add OpenAstro favicon for embedded web portal.
+  * See CHANGELOG.md for detailed release notes.
+
+ -- Joey Troy <joey.troy@gmail.com>  Tue, 12 May 2026 20:00:00 -0600
+
 phd2-alpaca (1.1.0) stable; urgency=low
 
   * Sync package changelog from root CHANGELOG.md for release 1.1.0.

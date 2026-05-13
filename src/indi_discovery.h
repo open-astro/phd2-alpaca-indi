@@ -1,9 +1,8 @@
 /*
- *  scopes.h
+ *  indi_discovery.h
  *  PHD Guiding
  *
- *  Created by Craig Stark.
- *  Copyright (c) 2006-2010 Craig Stark.
+ *  Copyright (c) 2026 PHD2 Developers
  *  All rights reserved.
  *
  *  This source code is distributed under the following "BSD" license
@@ -14,7 +13,7 @@
  *    Redistributions in binary form must reproduce the above copyright notice,
  *     this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *    Neither the name of Craig Stark, Stark Labs nor the names of its
+ *    Neither the name of openphdguiding.org nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -32,48 +31,24 @@
  *
  */
 
-#ifndef SCOPES_H_INCLUDED
-#define SCOPES_H_INCLUDED
+#ifndef INDI_DISCOVERY_H
+#define INDI_DISCOVERY_H
 
-#if defined(__WINDOWS__)
+#include "phd.h"
+#include <wx/arrstr.h>
 
-# define GUIDE_ASCOM
-# ifdef HAVE_SHOESTRING
-#  define GUIDE_GPUSB
-#  define GUIDE_GPINT
-# endif
-# define GUIDE_ALPACA
-# define GUIDE_INDI
+// INDI has no standardized discovery protocol (unlike Alpaca's UDP broadcast).
+// This class scans the local /24 subnets for hosts with port 7624 open and a
+// responsive INDI server behind it.
+class INDIDiscovery
+{
+public:
+    // Discover INDI servers on the local network. Returns host:port strings.
+    // timeoutSeconds is the total scan budget; ~2s gives clean results on a /24.
+    static wxArrayString DiscoverServers(int timeoutSeconds = 2);
 
-#elif defined(__APPLE__)
+    // Parse a server string (host:port) into components.
+    static bool ParseServerString(const wxString& serverStr, wxString& host, long& port);
+};
 
-# define GUIDE_GPUSB
-# define GUIDE_GCUSBST4
-# define GUIDE_EQUINOX
-// #define GUIDE_VOYAGER
-// #define GUIDE_NEB
-# define GUIDE_EQMAC
-# define GUIDE_INDI
-
-#elif defined(__linux__) || defined(__FreeBSD__)
-
-# define GUIDE_ALPACA
-# define GUIDE_INDI
-
-#endif // WINDOWS/APPLE/LINUX
-
-#include "scope.h"
-#include "scope_ascom.h"
-#include "scope_gpusb.h"
-#include "scope_gpint.h"
-#include "scope_voyager.h"
-#include "scope_equinox.h"
-#include "scope_eqmac.h"
-#include "scope_GC_USBST4.h"
-#include "scope_alpaca.h"
-#include "scope_manual_pointing.h"
-#ifdef GUIDE_INDI
-# include "scope_indi.h"
-#endif
-
-#endif /* SCOPES_H_INCLUDED */
+#endif // INDI_DISCOVERY_H

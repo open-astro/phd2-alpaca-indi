@@ -42,10 +42,12 @@
 # define ROTATOR_ALPACA
 #endif
 
+#define ROTATOR_INDI
 #define ROTATOR_SIMULATOR
 
 #include "rotator.h"
 #include "rotator_ascom.h"
 #include "rotator_alpaca.h"
+#include "rotator_indi.h"
 
 #endif // ROTATORS_INCLUDED

@@ -5,6 +5,44 @@ All notable changes to OpenAstro PHD2 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - Unreleased
+
+### Added
+- **INDI support restored on all platforms**
+  - Re-added INDI camera, mount, and rotator drivers (`cam_indi`, `scope_indi`, `rotator_indi`, `config_indi`, `indi_gui`). Available on Windows (via vcpkg-built `indiclient.lib`), macOS, and Linux. AO/stepguider INDI drivers remain removed.
+  - Restored `USE_SYSTEM_LIBINDI=1` and `PHD2_ALLOW_INDI_1_9` toggle for Debian builds; INDI 2.x runtime libs bundled into `/usr/lib/phd2-alpaca`.
+  - Added `libindi-dev` build dependency to `debian/control`.
+- **INDI server discovery**
+  - New `INDIDiscovery` class performs parallel non-blocking TCP probes on port 7624 across local /24 subnets. Total scan ~2s.
+  - Added Discover Servers button, status label, and discovered-servers combobox to `INDIConfig` dialog. Auto-fires on dialog open when host is empty; picking from the list auto-fills host/port.
+- **OpenAstro favicon for the embedded web portal.**
+- **Developer tooling**
+  - Added `.claude/commands/commit.md` slash command that runs the project's clang-format pass before staging and writes a structured commit message.
+
+### Changed
+- **Windows build**
+  - Bumped pinned vcpkg to release tag `2024.11.16` (SHA-pinned). Parallelized the Windows build invocation in `run_win.bat` (renamed from `run_cmake.bat`) so multi-core machines actually use their cores. Added flags: `-rebuild`, `-config`, `-launch`. Added Linux counterpart `run_deb.sh`.
+  - Enforced CRLF for `.bat` files via `.gitattributes` to keep the Windows build script intact across platforms.
+- **Wrapper script and systemd service**
+  - Restored `LD_LIBRARY_PATH=/usr/lib/phd2-alpaca` in `debian/phd2-alpaca.service` and `phd2.sh.in` so bundled INDI 2.x libs are discoverable at runtime.
+
+### Fixed
+- **INDI camera first-exposure disconnect**
+  - `CameraINDI::CheckState()` now requires `CCD_INFO` before marking the camera ready, so `Connect()` blocks until `m_maxSize` is populated. Previously the first `Capture()` could send `FRAME` with width=0/height=0, causing the driver to disconnect mid-exposure.
+- **Wizard pixel-size auto-fill for INDI cameras**
+  - `CameraINDI::GetDevicePixelSize()` now waits briefly for `CCD_INFO` arrival when called immediately after connect, so the profile wizard auto-populates the pixel-size field from the camera (matching Alpaca behavior).
+- **Aux-mount cleanup**
+  - Collapsed `ScopeINDI`'s aux-mount conditional branches; the gear dialog no longer exposes `AuxScope()` post-slim, so the dead branch is gone.
+
+### Commit References
+- `9648537a` - Re-add INDI camera, mount, and rotator support on all platforms
+- `b63a1358` - Fix clang-format wrap in scope_indi.cpp Debug.Write
+- `a33ccf1c` - INDI server discovery + pixel size + first-exposure fix
+- `f2bc9b8f` - Apply clang-format fixes and add /commit slash command
+- `5263b10c` - Bump vcpkg to 2024.11.16 and parallelize Windows build
+- `c9d57c8c` - Address CodeRabbit review: SHA pin, preserve CL flags, enforce CRLF
+- `e399535d` - Add favicon using OpenAstro logo
+
 ## [1.2.0] - 2026-03-22
 
 ### Removed

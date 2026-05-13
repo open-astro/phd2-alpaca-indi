@@ -39,8 +39,9 @@
   to detect or package this
   */
 
-// Alpaca-only build: all platforms support only Alpaca camera
+// phd2-alpaca build: Alpaca + INDI on all platforms
 # define ALPACA_CAMERA
+# define INDI_CAMERA
 # define SIMULATOR
 
 #endif // CAMERAS_INCLUDED

@@ -43,6 +43,14 @@ const float Rotator::POSITION_UNKNOWN = -888.f;
 
 Rotator *pRotator;
 
+#ifdef ROTATOR_INDI
+static wxString INDIRotatorName()
+{
+    wxString indirotator = pConfig->Profile.GetString("/indi/INDIrotator", wxEmptyString);
+    return indirotator.empty() ? _T("INDI Rotator") : wxString::Format("INDI Rotator [%s]", indirotator);
+}
+#endif
+
 #ifdef ROTATOR_ALPACA
 static wxString AlpacaRotatorName()
 {

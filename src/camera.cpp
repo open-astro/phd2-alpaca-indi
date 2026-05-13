@@ -53,6 +53,10 @@ wxSize UNDEFINED_FRAME_SIZE = wxSize(0, 0);
 # include "cam_alpaca.h"
 #endif
 
+#if defined(INDI_CAMERA)
+# include "cam_indi.h"
+#endif
+
 const wxString GuideCamera::DEFAULT_CAMERA_ID = wxEmptyString;
 
 double GuideCamera::GetProfilePixelSize()
@@ -105,6 +109,14 @@ static wxString AlpacaCamName()
     return host.empty() ? _T("Alpaca Camera") : wxString::Format("Alpaca Camera [%s:%ld/%ld]", host, port, device);
 }
 
+#if defined(INDI_CAMERA)
+static wxString INDICamName()
+{
+    wxString indicam = pConfig->Profile.GetString("/indi/INDIcam", wxEmptyString);
+    return indicam.empty() ? _T("INDI Camera") : wxString::Format("INDI Camera [%s]", indicam);
+}
+#endif
+
 wxArrayString GuideCamera::GuideCameraList()
 {
     wxArrayString CameraList;
@@ -112,6 +124,9 @@ wxArrayString GuideCamera::GuideCameraList()
     CameraList.Add(_("None"));
 #if defined(ALPACA_CAMERA)
     CameraList.Add(AlpacaCamName());
+#endif
+#if defined(INDI_CAMERA)
+    CameraList.Add(INDICamName());
 #endif
 
     CameraList.Sort(&CompareNoCase);
@@ -135,6 +150,13 @@ GuideCamera *GuideCamera::Factory(const wxString& choice)
         if (false) // so else ifs can follow
         {
         }
+        // Check INDI and Alpaca first since those choices may match other choices below
+#if defined(INDI_CAMERA)
+        else if (choice.Contains(_T("INDI")))
+        {
+            pReturn = INDICameraFactory::MakeINDICamera();
+        }
+#endif
 #if defined(ALPACA_CAMERA)
         else if (choice.Contains(_T("Alpaca")))
         {

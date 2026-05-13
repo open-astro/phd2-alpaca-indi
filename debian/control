@@ -6,6 +6,7 @@ Build-Depends: debhelper-compat (= 13),
                cmake,
                libwxgtk3.2-dev | libwxgtk3.0-dev | libwxgtk3.0-gtk3-dev,
                libcfitsio-dev,
+               libindi-dev,
                libopencv-dev,
                libusb-1.0-0-dev,
                libudev-dev,
@@ -23,13 +24,13 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
          adduser,
          xvfb
 Suggests: indi-bin
-Description: PHD2 auto-guiding with ASCOM Alpaca support
+Description: PHD2 auto-guiding with ASCOM Alpaca and INDI support
  PHD2 is a telescope auto-guiding application designed to be easy to use
  while providing powerful, intelligent guiding. Connect your mount, your
  camera, select a star, and start guiding.
  .
- This build includes integrated ASCOM Alpaca support for controlling cameras,
- mounts, and rotators over the local network without INDI or ASCOM drivers.
+ This build includes integrated ASCOM Alpaca and INDI support for controlling
+ cameras, mounts, and rotators over the local network.
  .
  Runs headlessly as the phd2-alpaca system user via systemd, exposing the
  PHD2 JSON-RPC API for remote control by planetarium and capture software.
