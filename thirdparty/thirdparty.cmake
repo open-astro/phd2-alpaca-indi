@@ -452,7 +452,7 @@ else()
   ExternalProject_Add(
     indi
     GIT_REPOSITORY https://github.com/indilib/indi.git
-    GIT_TAG 6aa360543313c9e00819148da9df15647ffa7996  # v2.1.6
+    GIT_TAG 6c99d6c033dbf23f3c8d5772f20720d355755fb1  # v2.2.1.1
     CMAKE_ARGS -Wno-dev
       -DINDI_BUILD_SERVER=OFF
       -DINDI_BUILD_DRIVERS=OFF
