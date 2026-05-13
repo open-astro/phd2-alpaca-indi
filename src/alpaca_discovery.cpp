@@ -46,6 +46,8 @@
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# include <ifaddrs.h>
+# include <net/if.h>
 # include <unistd.h>
 # include <fcntl.h>
 # include <errno.h>
@@ -81,25 +83,19 @@ static std::vector<sockaddr_in> BuildBroadcastTargets()
         target.sin_family = AF_INET;
         target.sin_port = htons(ALPACA_DISCOVERY_PORT);
         target.sin_addr.s_addr = addr;
-        bool exists = false;
         for (const auto& existing : targets)
         {
             if (existing.sin_addr.s_addr == addr)
-            {
-                exists = true;
-                break;
-            }
+                return;
         }
-        if (!exists)
-        {
-            targets.push_back(target);
-#ifdef _WIN32
-            Debug.Write(wxString::Format("AlpacaDiscovery: Added broadcast target %s\n", AddrToString(target.sin_addr)));
-#else
-            Debug.Write(wxString::Format("AlpacaDiscovery: Added broadcast target %s\n", AddrToString(target.sin_addr)));
-#endif
-        }
+        targets.push_back(target);
+        Debug.Write(wxString::Format("AlpacaDiscovery: Added discovery target %s\n", AddrToString(target.sin_addr)));
     };
+
+    // Unicast to loopback so we discover Alpaca servers bound only to 127.0.0.1
+    // (e.g. ASCOM Remote Server's default "Loopback" IP setting). Subnet
+    // broadcasts do not reach loopback-only listeners.
+    addTarget(htonl(INADDR_LOOPBACK));
 
     addTarget(INADDR_BROADCAST);
 
@@ -139,6 +135,28 @@ static std::vector<sockaddr_in> BuildBroadcastTargets()
                 }
             }
         }
+    }
+#else
+    struct ifaddrs *ifap = nullptr;
+    if (getifaddrs(&ifap) == 0)
+    {
+        for (auto ifa = ifap; ifa; ifa = ifa->ifa_next)
+        {
+            if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+                continue;
+            if (!(ifa->ifa_flags & IFF_UP))
+                continue;
+            if (ifa->ifa_flags & IFF_LOOPBACK)
+                continue;
+            if (!ifa->ifa_netmask)
+                continue;
+
+            uint32_t hostAddr = ntohl(reinterpret_cast<sockaddr_in *>(ifa->ifa_addr)->sin_addr.s_addr);
+            uint32_t mask = ntohl(reinterpret_cast<sockaddr_in *>(ifa->ifa_netmask)->sin_addr.s_addr);
+            uint32_t broadcast = (hostAddr & mask) | (~mask);
+            addTarget(htonl(broadcast));
+        }
+        freeifaddrs(ifap);
     }
 #endif
 

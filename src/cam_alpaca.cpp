@@ -108,7 +108,7 @@ CameraAlpaca::CameraAlpaca()
     ClearStatus();
     // load the values from the current profile
     m_host = pConfig->Profile.GetString("/alpaca/host", _T("localhost"));
-    m_port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+    m_port = pConfig->Profile.GetLong("/alpaca/port", 0);
     m_deviceNumber = pConfig->Profile.GetLong("/alpaca/camera_device", 0);
     // Set Name after loading settings so it has the correct values
     Name = wxString::Format("Alpaca Camera [%s:%ld/%ld]", m_host, m_port, m_deviceNumber);
@@ -163,15 +163,15 @@ bool CameraAlpaca::GetDevicePixelSize(double *devPixelSize)
 bool CameraAlpaca::Connect(const wxString& camId)
 {
     // If not configured open the setup dialog
-    if (m_host == _T("localhost") && m_port == 6800 && m_deviceNumber == 0)
+    if (m_port == 0)
     {
         CameraSetup();
         // Reload values after dialog
         m_host = pConfig->Profile.GetString("/alpaca/host", _T("localhost"));
-        m_port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+        m_port = pConfig->Profile.GetLong("/alpaca/port", 0);
         m_deviceNumber = pConfig->Profile.GetLong("/alpaca/camera_device", 0);
-        // If still using defaults after setup, user probably cancelled - don't try to connect
-        if (m_host == _T("localhost") && m_port == 6800 && m_deviceNumber == 0)
+        // If still unconfigured after setup, user probably cancelled - don't try to connect
+        if (m_port == 0)
         {
             Debug.Write("Alpaca Camera: Setup cancelled or not configured, skipping connection\n");
             return CamConnectFailed(_("Alpaca Camera: Setup cancelled or not configured"));

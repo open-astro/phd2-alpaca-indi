@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - Unreleased
 
+### Fixed
+- **Alpaca discovery misses loopback-bound servers**
+  - `AlpacaDiscovery::BuildBroadcastTargets()` now always probes `127.0.0.1:32227` as a unicast target so Alpaca servers bound only to loopback (e.g. ASCOM Remote Server's default "Loopback" IP setting) are discovered. Previously these were invisible because subnet broadcasts (255.255.255.255 and per-interface broadcasts) never reach loopback-only listeners — the workaround was to manually edit Remote Server to bind to the LAN IP.
+  - Added Linux/macOS network-interface enumeration via `getifaddrs`. Previously the non-Windows path sent only to `255.255.255.255`, so multi-NIC Linux/Pi setups (VPN, docker, multiple LANs) missed servers on subnets the default route did not cover. Mirrors the Windows `GetAdaptersAddresses` path and the pattern in `indi_discovery.cpp`.
+
+### Changed
+- **Alpaca port default is now `0` (unconfigured) instead of `6800`**
+  - `pConfig->Profile.GetLong("/alpaca/port", ...)` now defaults to `0` in `cam_alpaca.cpp`, `scope_alpaca.cpp`, `rotator_alpaca.cpp`, `camera.cpp`, `scope.cpp`, `rotator.cpp`, and `event_server.cpp`. The previous `6800` was AlpacaBridge-specific and misleading for users running ASCOM Remote Server (default `11111`) or anything else.
+  - `Connect()` "not yet configured" sentinel in the Alpaca camera/mount/rotator drivers simplified from `host == "localhost" && port == 6800 && device == 0` to just `port == 0`. The old triple-check could spuriously re-open the setup dialog for users genuinely running AlpacaBridge at `localhost:6800` with device 0.
+  - `AlpacaConfig::SetSettings()` renders an unconfigured port as an empty field instead of literal `"0"`. The dialog's existing auto-discover path fires when the server list is empty, so new profiles open with empty fields and discovery immediately populates them — matching NINA's flow.
+
 ### Added
 - **INDI support restored on all platforms**
   - Re-added INDI camera, mount, and rotator drivers (`cam_indi`, `scope_indi`, `rotator_indi`, `config_indi`, `indi_gui`). Available on Windows (via vcpkg-built `indiclient.lib`), macOS, and Linux. AO/stepguider INDI drivers remain removed.

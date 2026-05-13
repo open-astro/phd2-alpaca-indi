@@ -330,7 +330,7 @@ static int CompareNoCase(const wxString& first, const wxString& second)
 static wxString AlpacaMountName()
 {
     wxString host = pConfig->Profile.GetString("/alpaca/host", wxEmptyString);
-    long port = pConfig->Profile.GetLong("/alpaca/port", 6800);
+    long port = pConfig->Profile.GetLong("/alpaca/port", 0);
     long device = pConfig->Profile.GetLong("/alpaca/telescope_device", 0);
     return host.empty() ? _("Alpaca Mount") : wxString::Format(_("Alpaca Mount [%s:%ld/%ld]"), host, port, device);
 }
