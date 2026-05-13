@@ -282,7 +282,9 @@ fi
 # Report result
 # ---------------------------------------------------------------------------
 PARENT_DIR="$(dirname "$ROOT_DIR")"
-DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2_*_*.deb" -type f 2>/dev/null | head -1)
+# Filename mirrors the Source: name in debian/control (phd2-alpaca). Exclude
+# the dbgsym sibling so we point the user at the installable .deb.
+DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_*_*.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
 if [[ -n "$DEB" && -f "$DEB" ]]; then
     echo ""
     echo -e "${GREEN}========================================${NC}"
