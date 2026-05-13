@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Ubuntu PPA guidance, wxWidgets 3.0 fallback paths, and armhf/i386 build support from the Linux build scripts.
-- 32-bit Windows build target. `run_win.bat` now passes `-A x64` and the matching x86 paths in `thirdparty.cmake` / `WinLibs/x86` / `VidCapture` are slated for removal in a follow-up cleanup commit.
+- 32-bit Windows build target. `run_win.bat` now passes `-A x64`.
+- `WinLibs/x86/` — 9 32-bit redist DLLs and legacy libraries (`msvcr120.dll` VS2013 runtime, `inpout32.dll` legacy port I/O, `wxVidCapLib_wx29`).
+- `thirdparty/VidCapture/` — vendored DirectShow video-capture library (~2003), only compiled on Windows x86 and unreferenced from `src/`.
+- `upload.cmd` — legacy buildbot upload script targeting openphdguiding.org's `phd2buildbot` putty session; not used by this fork's release flow.
 
 ### Changed
 - About dialog refreshed: Joey Troy is the sole Project maintainer; Andy Galasso and Bruce Waddington moved to Past maintainers alongside Craig Stark and Bret McKee; `Copyright 2026 OpenAstro` added to the copyright list.
