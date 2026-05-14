@@ -480,14 +480,14 @@ endmacro(ADD_MSVC_PRECOMPILED_HEADER)
 if(APPLE)
 
   # bundle definitions
-  set(MACOSX_BUNDLE_BUNDLE_NAME          PHD2 )
-  set(MACOSX_BUNDLE_GUI_IDENTIFIER       "org.openphdguiding.phd2" )
-  set(MACOSX_BUNDLE_ICON_FILE            PHD_OSX_icon.icns )
-  set(MACOSX_BUNDLE_INFO_STRING          "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}, Copyright 2010-2025 openphdguiding.org" )
+  set(MACOSX_BUNDLE_BUNDLE_NAME          "OpenAstro PHD2" )
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER       "net.openastro.phd2" )
+  set(MACOSX_BUNDLE_ICON_FILE            AppIcon.icns )
+  set(MACOSX_BUNDLE_INFO_STRING          "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}, Copyright 2026 OpenAstro" )
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}" )
   set(MACOSX_BUNDLE_LONG_VERSION_STRING  "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
   set(MACOSX_BUNDLE_BUNDLE_VERSION       "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
-  set(MACOSX_BUNDLE_COPYRIGHT            "(C) 2010-2025 openphdguiding.org" )
+  set(MACOSX_BUNDLE_COPYRIGHT            "Copyright 2026 OpenAstro. Based on PHD2 (C) 2010-2025 openphdguiding.org." )
 
   # main target
   add_executable(
@@ -663,7 +663,7 @@ foreach(lib ${PHD_LINK_EXTERNAL_RELEASE})
 endforeach()
 
 target_link_libraries(phd2
-                      MPIIS_GP GPGuider # GP Guider
+                      GPGuider # GP Guider (pulls in MPIIS_GP and MPIIS_GP_TOOLS transitively)
                       ${PHD_LINK_EXTERNAL})
 
 if(WIN32)

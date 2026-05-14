@@ -111,10 +111,9 @@ add_test(NAME MathToolboxTest COMMAND MathToolboxTest)
 add_executable(GPGuiderTest ${gaussian_process_root_dir}/tests/gaussian_process/gp_guider_test.cpp)
 target_link_libraries(
   GPGuiderTest
-  MPIIS_GP
   debug ${gtest_link_debug}
   optimized ${gtest_link_optimized}
-  GPGuider
+  GPGuider  # PUBLIC-links MPIIS_GP and MPIIS_GP_TOOLS transitively
 )
 target_include_directories(GPGuiderTest  PRIVATE ${gaussian_process_root_dir}/tools ${phd_src_dir})
 set_property(TARGET GPGuiderTest PROPERTY FOLDER "Unit tests/Contribution")
@@ -124,10 +123,9 @@ add_test(NAME GPGuiderTest COMMAND GPGuiderTest WORKING_DIRECTORY ${gaussian_pro
 add_executable(GuidePerformanceTest ${gaussian_process_root_dir}/tests/gaussian_process/guide_performance_test.cpp)
 target_link_libraries(
   GuidePerformanceTest
-  MPIIS_GP
   debug ${gtest_link_debug}
   optimized ${gtest_link_optimized}
-  GPGuider
+  GPGuider  # PUBLIC-links MPIIS_GP and MPIIS_GP_TOOLS transitively
 )
 target_include_directories(GuidePerformanceTest  PRIVATE ${gaussian_process_root_dir}/tools ${phd_src_dir})
 set_property(TARGET GuidePerformanceTest PROPERTY FOLDER "Unit tests/Contribution")
@@ -137,10 +135,9 @@ add_test(NAME GuidePerformanceTest COMMAND GuidePerformanceTest WORKING_DIRECTOR
 add_executable(GuidePerformanceEval ${gaussian_process_root_dir}/tests/gaussian_process/evaluate_performance.cpp)
 target_link_libraries(
   GuidePerformanceEval
-  MPIIS_GP
   debug ${gtest_link_debug}
   optimized ${gtest_link_optimized}
-  GPGuider
+  GPGuider  # PUBLIC-links MPIIS_GP and MPIIS_GP_TOOLS transitively
 )
 target_include_directories(GuidePerformanceEval  PRIVATE ${gaussian_process_root_dir}/tools ${phd_src_dir})
 set_property(TARGET GuidePerformanceEval PROPERTY FOLDER "Unit tests/Contribution")

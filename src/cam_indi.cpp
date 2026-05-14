@@ -802,8 +802,11 @@ void CameraINDI::CameraSetup()
     indiDlg.INDIForceExposure = INDICameraForceExposure;
     // initialize with actual values
     indiDlg.SetSettings();
-    // try to connect to server
-    indiDlg.Connect();
+    // Auto-connect on dialog open removed: it blocks the main thread for
+    // 3-6s waiting for a server that often isn't running, which macOS
+    // surfaces as a beachball/wait cursor and which users perceive as a
+    // hang or crash. The dialog has its own Discover Servers button and
+    // explicit Connect button; let the user trigger connection deliberately.
     if (indiDlg.ShowModal() == wxID_OK)
     {
         // if OK save the values to the current profile

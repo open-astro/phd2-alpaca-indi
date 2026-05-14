@@ -1,4 +1,4 @@
-# OpenAstro PHD2 Build (Unofficial)
+# OpenAstro PHD2
 
 <img src="icons/oa512.png" alt="OpenAstro Logo" width="125">
 
@@ -24,18 +24,24 @@ This fork supports **only** ASCOM Alpaca and INDI for cameras, mounts, and rotat
 
 ## Building
 
+Every platform follows the same two-script pattern: `run_<artifact>` configures and (with `--build`) compiles for fast dev iteration; `build-<artifact>` produces the redistributable installer.
+
 ### Windows
 
 ```cmd
-run_win.bat                    REM incremental build (default)
-run_win.bat -rebuild           REM wipe tmp\ and full rebuild
-run_win.bat -launch            REM build then start phd2.exe
-run_win.bat -help              REM all options
+run_exe.bat                    REM incremental build (default)
+run_exe.bat -rebuild           REM wipe tmp\ and full rebuild
+run_exe.bat -launch            REM build then start phd2.exe
+run_exe.bat -help              REM all options
 ```
 
 First clean build takes 10–60 minutes depending on hardware — vcpkg builds OpenCV from source. Subsequent incremental builds are 1–5 minutes. Requires Visual Studio 2022 and `git` on `PATH`.
 
-### Linux / Debian / Ubuntu / Raspberry Pi
+To produce a redistributable installer (`.exe`), use `build-exe.ps1`.
+
+### Linux / Debian / Raspberry Pi
+
+Supported: **Debian 13 Trixie** and **Raspberry Pi OS Trixie**, on amd64 or arm64. 32-bit ARM (armhf, e.g. Pi Zero / Pi 1 / Pi 2) and i386 are not supported; on a 64-bit-capable Pi (3/4/5) install the 64-bit Raspberry Pi OS.
 
 ```bash
 ./run_deb.sh                   # configure only
@@ -46,8 +52,8 @@ Then run the binary at `tmp/phd2.bin` (or via the `tmp/phd2` wrapper). To produc
 
 INDI 2.0+ is required. `run_deb.sh` auto-detects your system `libindi` via `pkg-config` and picks one of two paths:
 
-- **System libindi ≥ 2.0** (e.g. Ubuntu 24.04+ with the indilib PPA) — the build links against it directly. Fastest incremental builds.
-- **Missing or older libindi** (e.g. Debian trixie stock 1.9.9, Pi OS stock) — the build automatically fetches INDI 2.2.1.1 and compiles it as a static client library. No manual setup needed; first build adds ~3–5 min for the INDI compile.
+- **System libindi ≥ 2.0** — the build links against it directly. Fastest incremental builds.
+- **Missing or older libindi** (e.g. Pi OS stock 1.9.x) — the build automatically fetches INDI 2.2.1.1 and compiles it as a static client library. No manual setup needed; first build adds ~3–5 min for the INDI compile.
 
 To force a specific path:
 
@@ -56,11 +62,28 @@ USE_SYSTEM_LIBINDI=0 ./run_deb.sh --build   # always from-source
 USE_SYSTEM_LIBINDI=1 ./run_deb.sh --build   # always system (fails if < 2.0)
 ```
 
-On Ubuntu, the indilib PPA gives you a current libindi without compiling: `sudo add-apt-repository ppa:mutlaqja/ppa && sudo apt update && sudo apt install libindi-dev`. The PPA is Launchpad-only and **does not** resolve on Debian — let the auto-detected from-source fallback handle it instead.
-
 ### macOS
 
-Not yet supported by this fork. The upstream `build/build-mac` script may work but is unverified after the 1.2.0 slim refactor; macOS support will be revisited in a later release.
+Supported: **macOS 26 Tahoe or newer** on **Apple Silicon (arm64)**. Intel Macs and pre-Tahoe macOS are not supported.
+
+Install build dependencies via [Homebrew](https://brew.sh):
+
+```bash
+brew install cmake wxwidgets cfitsio libnova gettext
+# or, equivalently:
+./build-dmg.sh --install-deps
+```
+
+Then build:
+
+```bash
+./run_dmg.sh                   # configure only
+./run_dmg.sh --build           # configure + parallel build
+```
+
+The bundle is at `tmp/PHD2.app`. To produce a redistributable `.dmg`, use `./build-dmg.sh` — it builds, then recursively bundles every Homebrew dylib (cfitsio, wxWidgets, image libs, etc.) into `PHD2.app/Contents/Frameworks/` and rewrites install names so end users don't need Homebrew installed to run the app. Result: `tmp/PHD2-<version>-macOS-arm64.dmg`.
+
+The `.dmg` is unsigned — first launch requires right-click → Open (or `xattr -dr com.apple.quarantine /Applications/PHD2.app`). This is normal for unsigned open-source apps; Apple Developer ID signing is a future addition.
 
 ## License
 

@@ -331,7 +331,10 @@ else()
       -DCMAKE_CXX_FLAGS=-D_CRT_SECURE_NO_WARNINGS
       -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
   )
-  include_directories(${indi_INSTALL_DIR}/include)
+  # SYSTEM suppresses warnings from INDI headers (e.g. -Wnontrivial-memcall
+  # on memset(this, 0, sizeof(*this)) in indipropertyview.h). Not our code,
+  # not our bug to fix; we just don't want it cluttering our build output.
+  include_directories(SYSTEM ${indi_INSTALL_DIR}/include)
   if(WIN32)
     list(APPEND PHD_LINK_EXTERNAL ${indi_INSTALL_DIR}/lib/indiclient.lib)
   else()

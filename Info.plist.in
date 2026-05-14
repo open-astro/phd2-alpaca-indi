@@ -32,5 +32,11 @@
 	<string>${MACOSX_BUNDLE_COPYRIGHT}</string>
 	<key>NSHighResolutionCapable</key>
 	<true />
+	<!-- Opt in to system appearance changes (dark mode). Without this key,
+	     macOS forces the app into legacy Aqua/light regardless of the
+	     user's system setting. With it false, the chrome (windows, dialogs,
+	     menus, controls) follows System Settings → Appearance. -->
+	<key>NSRequiresAquaSystemAppearance</key>
+	<false />
 </dict>
 </plist>

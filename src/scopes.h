@@ -47,12 +47,7 @@
 
 #elif defined(__APPLE__)
 
-# define GUIDE_GPUSB
-# define GUIDE_GCUSBST4
-# define GUIDE_EQUINOX
-// #define GUIDE_VOYAGER
-// #define GUIDE_NEB
-# define GUIDE_EQMAC
+# define GUIDE_ALPACA
 # define GUIDE_INDI
 
 #elif defined(__linux__) || defined(__FreeBSD__)

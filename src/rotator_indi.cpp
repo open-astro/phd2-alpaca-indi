@@ -254,7 +254,11 @@ void RotatorINDI::RotatorSetup()
     indiDlg.INDIport = INDIport;
     indiDlg.INDIDevName = INDIRotatorName;
     indiDlg.SetSettings();
-    indiDlg.Connect();
+    // Auto-connect on dialog open removed: it blocks the main thread for
+    // 3-6s waiting for a server that often isn't running, which macOS
+    // surfaces as a beachball/wait cursor and which users perceive as a
+    // hang or crash. The dialog has its own Discover Servers button and
+    // explicit Connect button; let the user trigger connection deliberately.
     if (indiDlg.ShowModal() == wxID_OK)
     {
         indiDlg.SaveSettings();

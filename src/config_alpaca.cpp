@@ -49,7 +49,9 @@
 # include <wx/combobox.h>
 # include <wx/button.h>
 # include <wx/msgdlg.h>
+# include <chrono>
 # include <cstring>
+# include <future>
 # include <vector>
 # include <algorithm>
 # include <exception>
@@ -171,6 +173,10 @@ AlpacaConfig::AlpacaConfig(wxWindow *parent, const wxString& title, AlpacaDevTyp
     minSize.SetWidth(wxMax(minSize.GetWidth(), 450));
     SetMinSize(minSize);
     SetSize(minSize);
+
+    // Centre on the parent window so the dialog appears next to whatever
+    // spawned it (wizard or gear dialog) instead of at the OS-default position.
+    CentreOnParent();
 }
 
 AlpacaConfig::~AlpacaConfig() { }
@@ -397,9 +403,27 @@ void AlpacaConfig::OnDiscover(wxCommandEvent& evt)
     // Force UI update
     wxYield();
 
-    // Perform discovery
+    // Run discovery on a worker thread and pump the UI event loop while we
+    // wait. DiscoverServers blocks ~4s in select()/recvfrom(); on the main
+    // thread that puts macOS over the beachball threshold and freezes the
+    // dialog. Debug.Write is wxCriticalSection-protected, so off-main-thread
+    // logging during discovery is safe.
+    //
+    // Re-asserting the standard cursor inside the loop is a macOS workaround:
+    // wxOSX (and AppKit when an event handler runs > ~2s) will swap to a
+    // wait/watch cursor on its own. Forcing the standard cursor each tick
+    // keeps the pointer normal while the worker runs.
     Debug.Write("AlpacaConfig::OnDiscover: calling AlpacaDiscovery::DiscoverServers\n");
-    wxArrayString servers = AlpacaDiscovery::DiscoverServers(2, 2);
+    auto fut = std::async(std::launch::async, []() { return AlpacaDiscovery::DiscoverServers(2, 2); });
+    SetCursor(*wxSTANDARD_CURSOR);
+    while (fut.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready)
+    {
+        wxYield();
+        wxSetCursor(*wxSTANDARD_CURSOR);
+        SetCursor(*wxSTANDARD_CURSOR);
+    }
+    wxArrayString servers = fut.get();
+    SetCursor(wxNullCursor);
     Debug.Write(wxString::Format("AlpacaConfig::OnDiscover: discover returned %u servers\n",
                                  static_cast<unsigned int>(servers.GetCount())));
 

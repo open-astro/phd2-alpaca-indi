@@ -855,6 +855,10 @@ void IndiGui::ShowIndiGui(IndiGui **ret, const wxString& host, long port, bool a
     gui->m_holder = ret;
     *ret = gui;
 
+    // Centre on the parent window before showing so the INDI Options dialog
+    // appears next to the main app instead of at the OS-default position.
+    gui->CentreOnParent();
+
     if (modal)
         gui->ShowModal();
     else
@@ -877,7 +881,14 @@ IndiGui::IndiGui()
 
 void IndiGui::OnQuit(wxCloseEvent& WXUNUSED(event))
 {
-    if (isServerConnected())
+    // If we were shown via ShowModal(), Show(false) just hides the window
+    // without ending the modal loop, leaving the app in a wedged state where
+    // every click beeps because there's an "active" (but invisible) modal
+    // dialog. Always EndModal() in the modal case so ShowModal() returns
+    // and the caller can dispose of us.
+    if (IsModal())
+        EndModal(wxID_CANCEL);
+    else if (isServerConnected())
         Show(false);
     else
         Destroy();
