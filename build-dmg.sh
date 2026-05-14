@@ -388,16 +388,106 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# DMG creation
+# DMG creation — "drag PHD2 to Applications" install window.
+#
+# Three-step process:
+#   1. Build a writable scratch DMG (UDRW) seeded with PHD2.app.
+#   2. Mount it, add the /Applications symlink and .background/ image, then
+#      drive Finder via AppleScript to set the icon view: 640×360 window,
+#      icon size 128, our PNG as background, PHD2.app on the left and the
+#      Applications shortcut on the right.
+#   3. Detach and convert to a compressed read-only UDZO for shipping.
+#
+# Note: the first time you run this on a fresh macOS user account, Finder
+# will prompt for "Allow Terminal to control Finder" via System Settings →
+# Privacy & Security → Automation. If that prompt is denied the DMG still
+# builds correctly; it just falls back to a default Finder window layout.
 # ---------------------------------------------------------------------------
 step "Creating ${DMG_NAME}..."
-rm -f "$DMG_NAME"
+
+BG_IMG="${ROOT_DIR}/packaging/macos/background.png"
+[[ -f "$BG_IMG" ]] || err "Missing DMG background image: $BG_IMG"
+
+STAGING_DMG="phd2-staging-$$.dmg"
+VOLNAME="PHD2"
+MOUNTPOINT="/Volumes/${VOLNAME}"
+
+rm -f "$DMG_NAME" "$STAGING_DMG"
+# Clean up any leftover mount from a previous failed run.
+if [[ -d "$MOUNTPOINT" ]]; then
+    hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1 || true
+fi
+
+# Size the writable DMG to fit PHD2.app + ~20 MB headroom for the symlink,
+# background image, and HFS+ metadata.
+APP_KB=$(du -sk PHD2.app | awk '{print $1}')
+DMG_KB=$(( APP_KB + 20480 ))
+
 hdiutil create \
-    -volname PHD2 \
     -srcfolder PHD2.app \
-    -format UDZO \
+    -volname "$VOLNAME" \
     -fs HFS+ \
-    "$DMG_NAME"
+    -fsargs "-c c=64,a=16,e=16" \
+    -format UDRW \
+    -size "${DMG_KB}k" \
+    "$STAGING_DMG"
+
+step "Mounting staging DMG to lay out window..."
+ATTACH_LOG=$(mktemp)
+hdiutil attach "$STAGING_DMG" -readwrite -noverify -noautoopen >"$ATTACH_LOG"
+DEVICE=$(awk '/Apple_HFS/ {print $1; exit}' "$ATTACH_LOG")
+rm -f "$ATTACH_LOG"
+[[ -n "$DEVICE" ]] || err "Could not determine device node for mounted staging DMG."
+
+ln -s /Applications "${MOUNTPOINT}/Applications"
+mkdir -p "${MOUNTPOINT}/.background"
+cp "$BG_IMG" "${MOUNTPOINT}/.background/background.png"
+
+# AppleScript drives Finder to set the icon view. Bounds are
+# {left, top, right, bottom} in *outer* screen coords. The title bar eats
+# ~28pt of that, so to give the 600-logical-px-tall background image a
+# matching 600pt content area we set the outer height to 628 (600+28).
+# Without this offset Finder shows a vertical scrollbar to expose the
+# bottom strip of the image it would otherwise clip.
+# Icon positions are in content-area coords (0,0 = top-left of the
+# content area, below the title bar).
+osascript <<APPLESCRIPT
+tell application "Finder"
+    tell disk "${VOLNAME}"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 900, 748}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        -- Standard 12pt label size. We'd rather force white text so labels
+        -- read cleanly on the dark navy band, but macOS Tahoe's Finder
+        -- dropped `text color` on icon view options (raises -1728) and
+        -- there's no AppleScript path that still works. The try/end try
+        -- keeps the script working if Apple ever restores the property on
+        -- a future macOS.
+        set text size of viewOptions to 12
+        try
+            set text color of viewOptions to {65535, 65535, 65535}
+        end try
+        set background picture of viewOptions to file ".background:background.png"
+        set position of item "PHD2.app" of container window to {175, 450}
+        set position of item "Applications" of container window to {525, 450}
+        update without registering applications
+        delay 2
+        close
+    end tell
+end tell
+APPLESCRIPT
+
+sync
+hdiutil detach "$DEVICE" -force
+
+step "Compressing to ${DMG_NAME}..."
+hdiutil convert "$STAGING_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_NAME"
+rm -f "$STAGING_DMG"
 chmod 644 "$DMG_NAME"
 
 DMG_PATH="${ROOT_DIR}/tmp/${DMG_NAME}"

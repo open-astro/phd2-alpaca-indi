@@ -759,7 +759,7 @@ LogUploadDialog::LogUploadDialog(wxWindow *parent)
     SetSizer(sizer0);
     Layout();
 
-    Centre(wxBOTH);
+    CentreOnParent();
 
     // Connect Events
     m_recent->Connect(wxEVT_COMMAND_HYPERLINK, wxHyperlinkEventHandler(LogUploadDialog::OnRecentClicked), nullptr, this);

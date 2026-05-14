@@ -208,7 +208,7 @@ ScopePointingDlg::ScopePointingDlg(wxWindow *parent, wxWindowID id, const wxStri
     this->Layout();
     GetSizer()->Fit(this);
 
-    this->Centre(wxBOTH);
+    this->CentreOnParent();
 }
 
 ScopePointingDlg::~ScopePointingDlg() { }

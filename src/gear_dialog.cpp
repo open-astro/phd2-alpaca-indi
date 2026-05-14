@@ -128,7 +128,7 @@ GearDialog::GearDialog(wxWindow *pParent)
 
     Initialize();
 
-    Centre(wxBOTH);
+    CentreOnParent();
 }
 
 GearDialog::~GearDialog()
@@ -1580,6 +1580,7 @@ NewProfileDialog::NewProfileDialog(wxWindow *parent) : wxDialog(parent, wxID_ANY
 
     sizer3->SetSizeHints(this);
     SetSizerAndFit(sizer3);
+    CentreOnParent();
 }
 
 void GearDialog::OnProfileNew(wxCommandEvent& event)

@@ -72,7 +72,7 @@ bool CalReviewDialog::Create(wxWindow *parent, const wxString& caption, const wx
     CreateControls();
     GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
-    Centre();
+    CentreOnParent();
     return true;
 }
 

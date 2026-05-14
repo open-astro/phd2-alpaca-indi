@@ -835,7 +835,7 @@ UpdaterDialog::UpdaterDialog(Updater *updater, Mode mode, Interactive interactiv
     SetSizerAndFit(sz1);
     Layout();
 
-    Centre(wxBOTH);
+    CentreOnParent();
 
     // Connect Events
     m_goButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(UpdaterDialog::OnGoClicked), NULL, this);

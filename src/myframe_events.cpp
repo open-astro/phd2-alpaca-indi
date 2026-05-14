@@ -307,6 +307,7 @@ SlitPropertiesDlg::SlitPropertiesDlg(wxWindow *parent, wxWindowID id, const wxSt
     vSizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags(0).Expand().Border(wxALL, 10));
 
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 struct SlitPosCtx : public wxObject
@@ -1004,6 +1005,10 @@ void MyFrame::OnSetupCamera(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnAdvanced(wxCommandEvent& WXUNUSED(event))
 {
     pAdvancedDialog->LoadValues();
+    // Re-center each time it's shown — the dialog is long-lived (built once at
+    // startup) so the main frame may have moved to a different display since
+    // construction. Without this, it reappears wherever it last sat.
+    pAdvancedDialog->CentreOnParent();
 
     if (pAdvancedDialog->ShowModal() == wxID_OK)
     {
@@ -1173,6 +1178,12 @@ void MyFrame::OnTestGuide(wxCommandEvent& WXUNUSED(evt))
     if (!pManualGuide)
         pManualGuide = TestGuide::CreateManualGuideWindow();
 
+    // Re-center each time the dialog goes from hidden to shown — it's cached
+    // for the life of the app, so without this it'd reappear wherever it last
+    // sat, possibly on a display the user isn't on anymore. Skip if it's
+    // already visible so we don't yank it out from under the user.
+    if (!pManualGuide->IsShown())
+        pManualGuide->CentreOnParent();
     pManualGuide->Show();
 }
 

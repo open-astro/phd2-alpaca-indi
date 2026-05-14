@@ -242,6 +242,7 @@ DarksDialog::DarksDialog(wxWindow *parent, bool darkLib)
 
     SetAutoLayout(true);
     SetSizerAndFit(pvSizer);
+    CentreOnParent();
 
     m_cancelling = false;
     m_started = false;

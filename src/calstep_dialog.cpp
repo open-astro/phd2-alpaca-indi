@@ -192,6 +192,7 @@ CalstepDialog::CalstepDialog(wxWindow *parent, int focalLength, double pixelSize
     m_pVSizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags(0).Expand().Border(wxALL, 10));
 
     SetSizerAndFit(m_pVSizer);
+    CentreOnParent();
 }
 
 // Utility function to add the <label, input> tuples to the grid including tool-tips

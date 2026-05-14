@@ -59,6 +59,7 @@ ConfirmDialog::ConfirmDialog(const wxString& prompt, const wxString& title, cons
         FindWindow(wxID_CANCEL)->SetLabel(negativeLabel);
 
     SetSizerAndFit(topLevelSizer);
+    CentreOnParent();
 }
 
 ConfirmDialog::~ConfirmDialog(void) { }

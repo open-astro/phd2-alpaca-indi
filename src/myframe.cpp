@@ -3498,7 +3498,11 @@ void MyFrame::PlaceWindowOnScreen(wxWindow *win, int x, int y)
     if (x < 0 || x > wxSystemSettings::GetMetric(wxSYS_SCREEN_X) - 20 || y < 0 ||
         y > wxSystemSettings::GetMetric(wxSYS_SCREEN_Y) - 20)
     {
-        win->Centre(wxBOTH);
+        // Fall back to centering on the parent (main app frame) so the window
+        // appears on whichever display PHD2 is currently on. Centre(wxBOTH)
+        // always lands on the primary display and is jarring on multi-monitor
+        // setups.
+        win->CentreOnParent(wxBOTH);
     }
     else
         win->Move(x, y);
