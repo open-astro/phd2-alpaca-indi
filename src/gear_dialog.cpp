@@ -1657,7 +1657,7 @@ void GearDialog::OnProfileRename(wxCommandEvent& event)
 
     if (pConfig->GetProfileId(newname) > 0)
     {
-        wxMessageBox(_(wxString::Format("Cannot not rename profile to %s, there is already a profile with that name", newname)),
+        wxMessageBox(wxString::Format(_("Cannot rename profile to %s, there is already a profile with that name"), newname),
                      _("Error"));
         return;
     }

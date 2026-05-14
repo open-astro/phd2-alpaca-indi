@@ -30,10 +30,6 @@
 
 
 if(APPLE)
-  if(APPLE32)
-    # should be done *before* declaring project.
-    set(CMAKE_OSX_ARCHITECTURES i386 CACHE STRING "build architecture for OSX" FORCE)
-  endif()
   set(CMAKE_MACOSX_RPATH TRUE)
 endif()
 

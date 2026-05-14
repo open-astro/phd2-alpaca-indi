@@ -9,9 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `/release` slash command that bumps `version.md`, closes `## [Unreleased]` into a numbered version section, gathers commit references via `git log`, and creates the release commit.
+- macOS Apple Silicon (arm64) build support. New `run_dmg.sh` and `build-dmg.sh` at the project root mirror the Linux/Windows pattern (`run_deb.sh` + `build-deb.sh`, `run_exe.bat` + `build-exe.ps1`). `build-dmg.sh` produces a fully self-contained `PHD2-<version>-macOS-arm64.dmg`: 15 Homebrew dylibs (cfitsio, wxWidgets 3.3, image libs, pcre2, sharpyuv via @rpath) are recursively copied into `PHD2.app/Contents/Frameworks/` and their install names rewritten with `install_name_tool` so end users don't need Homebrew installed to run the app.
 
 ### Changed
 - `/commit` slash command now appends an entry to `## [Unreleased]` in `CHANGELOG.md` so release notes accumulate per-commit instead of being backfilled at release time.
+- macOS minimum deployment target raised `10.14` → `26.0` (Tahoe). Matches the fork's pattern of dropping legacy floors and lets the build delete the now-dead "Sonoma+" conditional code in `run_cmake-osx` / `build/build-mac`. Tahoe also drops the last Intel Macs from Apple's supported list, aligning with the arm64-only target.
+- macOS scripts restructured: `build/build-mac` and `run_cmake-osx` removed; `run_dmg.sh` and `build-dmg.sh` at the project root are now the entry points (mirroring `run_deb.sh` + `build-deb.sh`). `MacOSXBundleInfo.plist.in` renamed to `Info.plist.in` to match Apple's canonical bundle filename.
+- macOS build wiring: `cfitsio` now links against the Homebrew dylib (the previous static `.a`-only constraint matched no Homebrew bottle); `libnova` lookup drops the hardcoded `/usr/local/lib` path (Intel Homebrew) in favor of `CMAKE_PREFIX_PATH`, so the same code path works on `/opt/homebrew` (arm64) and `/usr/local` (Intel); zlib explicitly added to the macOS link line for INDI 2.x's `basedevice.cpp` (`uncompress`); Eigen3 include path now queried from the `Eigen3::Eigen` target so Eigen 5.x (which dropped `EIGEN3_INCLUDE_DIR`) works.
+- "OSX" terminology cleanup in CMake comments / section headers and script names — Apple retired the "OS X" branding in 2016. User-facing wire-protocol identifiers (`PHD_OSNAME`, update-check URL paths) deliberately left unchanged to avoid breaking update notifications for existing installs.
+
 - Linux build scripts (`build-deb.sh`, `run_deb.sh`) now target Debian 13 Trixie / Raspberry Pi OS Trixie only, with fail-fast architecture checks rejecting hosts that aren't amd64 or arm64.
 - Windows build modernized: C++14 → C++20, and wxWidgets minimum pinned to 3.2 (was unpinned and silently accepted 3.0). `run_win.bat` now configures with `-A x64`.
 - C++20 conformance fixes across the source tree: ternary common-type ambiguities resolved in seven files (camera, gear_dialog, image_math, mount, myframe, rotator, guide_algorithm_gaussian_process); `DispatchObj` / `DispatchClass` in `comdispatch.h`/`.cpp` now take `const OLECHAR *` to satisfy `/Zc:strictStrings`; missing `#include "CVTrace.h"` added to `thirdparty/VidCapture/Source/VidCapture/CVImage.h` so the `CVAssert` macro is visible to `/permissive-`'s template-body parsing.
@@ -27,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WinLibs/x86/` — 9 32-bit redist DLLs and legacy libraries (`msvcr120.dll` VS2013 runtime, `inpout32.dll` legacy port I/O, `wxVidCapLib_wx29`).
 - `thirdparty/VidCapture/` — vendored DirectShow video-capture library (~2003), only compiled on Windows x86 and unreferenced from `src/`.
 - `upload.cmd` — legacy buildbot upload script targeting openphdguiding.org's `phd2buildbot` putty session; not used by this fork's release flow.
+- `upload.sh` and `build/make-release` — Linux/macOS twins of the already-removed `upload.cmd`. Same `phd2buildbot@openphdguiding.org` SFTP/buildbot infrastructure that this fork doesn't use.
+- `APPLE32` branch in `cmake_modules/compiler_options.cmake` (forced i386 architecture; macOS dropped i386 in 10.15) and the QuickTime framework reference in `thirdparty/thirdparty.cmake` (32-bit-only framework removed in macOS 10.15).
+- Intel Mac support. The macOS build is now arm64-only — there is no universal binary, no Rosetta path. Intel users on this fork's Mac path are no longer supported.
 - libusb dependency and the vendored `openssag` StarShoot AutoGuider driver. Neither is reachable from `src/` after the 1.2.0 native-camera-SDK cleanup; this fork's cameras come over Alpaca / INDI / ASCOM, none of which need direct USB. Drops `libusb-1.0-0-dev` and `libudev-dev` from Debian build deps, drops `USE_SYSTEM_LIBUSB` from CMake options and `run_deb.sh`, drops the macOS `libusb_openphd.dylib` framework-copy step, and removes 27 vendored files (`libusb-1.0.21.tar.bz2`, `thirdparty/include/libusb-1.0.21/`, entire `thirdparty/openssag/` tree) plus ~140 lines of CMake wiring.
 
 ### Fixed

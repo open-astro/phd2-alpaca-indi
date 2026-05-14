@@ -107,7 +107,6 @@ if(WIN32)
 endif()
 
 if(APPLE)
-  find_library(quicktimeFramework      QuickTime)
   find_library(iokitFramework          IOKit)
   find_library(carbonFramework         Carbon)
   find_library(cocoaFramework          Cocoa)
@@ -146,14 +145,10 @@ if(WIN32)
       ${VCPKG_RELEASE_BIN}/zlib1.dll
   )
 else()
-  if(APPLE)
-    SET(_save_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    find_package(CFITSIO REQUIRED)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_save_CMAKE_FIND_LIBRARY_SUFFIXES})
-  else()
-    find_package(CFITSIO REQUIRED)
-  endif()
+  # On macOS the Homebrew bottle ships only the dylib; we bundle it into
+  # PHD2.app/Contents/Frameworks/ via a POST_BUILD step in CMakeLists.txt
+  # and rewrite install names so the .app stays redistributable.
+  find_package(CFITSIO REQUIRED)
   include_directories(${CFITSIO_INCLUDE_DIR})
   list(APPEND PHD_LINK_EXTERNAL ${CFITSIO_LIBRARIES})
   message(STATUS "Using system's CFITSIO.")
@@ -202,8 +197,15 @@ if(WIN32)
   set(EIGEN_SRC ${VCPKG_INCLUDE}/eigen3)
 else()
   find_package(Eigen3 REQUIRED)
-  set(EIGEN_SRC ${EIGEN3_INCLUDE_DIR})
-  message(STATUS "Using system's Eigen3.")
+  # Eigen 5.x exposes the include path via the Eigen3::Eigen target only
+  # (EIGEN3_INCLUDE_DIR was dropped). Older configs still set the variable;
+  # fall back to it so this works on Debian/Pi too.
+  if(TARGET Eigen3::Eigen)
+    get_target_property(EIGEN_SRC Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+  else()
+    set(EIGEN_SRC ${EIGEN3_INCLUDE_DIR})
+  endif()
+  message(STATUS "Using system's Eigen3 (${EIGEN_SRC}).")
 endif()
 
 #############################################
@@ -229,7 +231,7 @@ endif()
 #
 # The usage is a bit different on all the platforms. For having
 #  version >= 3.0, a version of cmake >= 3.0 should be used on Windows
-#  on Linux/OSX it works properly this way).
+#  on Linux/macOS it works properly this way).
 
 set(wxWidgets_PREFIX_DIRECTORY $ENV{WXWIN} CACHE PATH "wxWidgets directory")
 
@@ -335,9 +337,14 @@ else()
   else()
     list(APPEND PHD_LINK_EXTERNAL ${indi_INSTALL_DIR}/lib/libindiclient.a)
     if(APPLE)
-      # MacOS must use a static libnova to avoid introducing a homebrew or macports dylib dependency
-      find_library(LIBNOVA REQUIRED NAMES libnova.a PATHS /usr/local/lib)
-      list(APPEND PHD_LINK_EXTERNAL ${LIBNOVA})
+      # MacOS must use a static libnova to avoid introducing a homebrew or
+      # macports dylib dependency. CMAKE_PREFIX_PATH (set in run_cmake-macos)
+      # points find_library at /opt/homebrew on Apple Silicon and /usr/local
+      # on Intel, so no hardcoded path is needed here.
+      find_library(LIBNOVA REQUIRED NAMES libnova.a)
+      # zlib is needed for INDI's basedevice (uncompress); macOS ships it as
+      # a system dylib at /usr/lib/libz.dylib, no install required.
+      list(APPEND PHD_LINK_EXTERNAL ${LIBNOVA} z)
     else()
       find_library(LIBNOVA REQUIRED NAMES nova)
       list(APPEND PHD_LINK_EXTERNAL ${LIBNOVA} z)
@@ -442,12 +449,11 @@ endif()
 
 #############################################
 #
-# OSX specific dependencies
+# macOS specific dependencies
 #
 #############################################
 if(APPLE)
   list(APPEND PHD_LINK_EXTERNAL
-    ${QuickTime}
     ${IOKit}
     ${Carbon}
     ${Cocoa}

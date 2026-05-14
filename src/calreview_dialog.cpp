@@ -348,7 +348,7 @@ void CalReviewDialog::CreateDataGrids(wxPanel *parentPanel, wxSizer *parentHSize
         wxString sPierSide = calBaseline.pierSide == PIER_SIDE_EAST ? _("East")
             : calBaseline.pierSide == PIER_SIDE_WEST                ? _("West")
                                                                     : NA_STR;
-        cfgGrid->SetCellValue(row, col++, _(sPierSide));
+        cfgGrid->SetCellValue(row, col++, sPierSide);
 
         row++;
         col = 0;

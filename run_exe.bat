@@ -2,15 +2,15 @@
 setlocal
 
 rem =======================================================================
-rem  run_win.bat - Configure and build PHD2 on Windows
+rem  run_exe.bat - Configure and build PHD2 on Windows
 rem
 rem  Usage:
-rem    run_win.bat                Incremental build (default)
-rem    run_win.bat -rebuild       Wipe tmp\ first, then full configure + build
-rem    run_win.bat -config        Configure only, no build
-rem    run_win.bat -launch        Build then start phd2.exe
-rem    run_win.bat -rebuild -launch    Combine flags
-rem    run_win.bat -help          Show this help
+rem    run_exe.bat                Incremental build (default)
+rem    run_exe.bat -rebuild       Wipe tmp\ first, then full configure + build
+rem    run_exe.bat -config        Configure only, no build
+rem    run_exe.bat -launch        Build then start phd2.exe
+rem    run_exe.bat -rebuild -launch    Combine flags
+rem    run_exe.bat -help          Show this help
 rem =======================================================================
 
 set CLEAN=0
@@ -36,7 +36,7 @@ goto show_help
 
 :show_help
 echo.
-echo Usage: run_win.bat [-rebuild] [-config] [-launch] [-help]
+echo Usage: run_exe.bat [-rebuild] [-config] [-launch] [-help]
 echo.
 echo   -rebuild  Wipe tmp\ and run a full configure + build from scratch.
 echo             Without this, the script does an incremental build on
