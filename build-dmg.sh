@@ -5,7 +5,7 @@
 # and pre-Tahoe macOS are not supported by this fork.
 #
 # Builds PHD2 and produces:
-#   PHD2-<version>-macOS-arm64.dmg
+#   openastro-phd2-<version>-arm64.dmg
 #
 # All Homebrew dylibs that PHD2 links against (wxWidgets, cfitsio, libnova
 # transitive image libs, etc.) are copied into PHD2.app/Contents/Frameworks/
@@ -292,7 +292,7 @@ while [[ $# -gt 0 ]]; do
 Usage: $0 [OPTIONS]
 
 Build PHD2 and create a .dmg disk image for macOS arm64.
-Result: PHD2-<version>-macOS-arm64.dmg in tmp/
+Result: openastro-phd2-<version>-arm64.dmg in tmp/
 
 Options:
   --install-deps   Install Homebrew build dependencies, then exit.
@@ -323,7 +323,7 @@ fi
 
 read_version
 info "Detected version: ${FULL_VERSION}"
-DMG_NAME="PHD2-${FULL_VERSION}-macOS-arm64.dmg"
+DMG_NAME="openastro-phd2-${FULL_VERSION}-arm64.dmg"
 
 # ---------------------------------------------------------------------------
 # Clean if requested

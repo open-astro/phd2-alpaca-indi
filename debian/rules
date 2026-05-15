@@ -28,7 +28,7 @@ override_dh_auto_configure:
 	CHANGELOG_VERSION="$$(dpkg-parsechangelog -S Version | sed -E 's/-[^-]+$$//')"; \
 	if [ "$$CHANGELOG_VERSION" != "$$VERSION" ]; then \
 		echo "Syncing debian/changelog version $$CHANGELOG_VERSION -> $$VERSION"; \
-		sed -i -E "1 s/^phd2-alpaca \\([^)]*\\) /phd2-alpaca ($$VERSION) /" $(CURDIR)/debian/changelog; \
+		sed -i -E "1 s/^openastro-phd2 \\([^)]*\\) /openastro-phd2 ($$VERSION) /" $(CURDIR)/debian/changelog; \
 	fi
 	@if [ "$(USE_SYSTEM_LIBINDI)" = "1" ]; then \
 		echo "debian/rules: USE_SYSTEM_LIBINDI=1 (system libindi >= 2.0.0)"; \
@@ -65,29 +65,29 @@ override_dh_auto_test:
 
 override_dh_auto_install:
 	dh_auto_install
-	# Rename the wrapper and binary from 'phd2' to 'phd2-alpaca'
+	# Rename the wrapper and binary from 'phd2' to 'openastro-phd2'
 	# The wrapper script (phd2) uses exec "$0.bin" so both must match.
-	if [ -f $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 ]; then \
-		mv $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 \
-		   $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2-alpaca; \
+	if [ -f $(CURDIR)/debian/openastro-phd2/usr/bin/phd2 ]; then \
+		mv $(CURDIR)/debian/openastro-phd2/usr/bin/phd2 \
+		   $(CURDIR)/debian/openastro-phd2/usr/bin/openastro-phd2; \
 	fi
-	if [ -f $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2.bin ]; then \
-		mv $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2.bin \
-		   $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2-alpaca.bin; \
+	if [ -f $(CURDIR)/debian/openastro-phd2/usr/bin/phd2.bin ]; then \
+		mv $(CURDIR)/debian/openastro-phd2/usr/bin/phd2.bin \
+		   $(CURDIR)/debian/openastro-phd2/usr/bin/openastro-phd2.bin; \
 	fi
 	# Bundle INDI 2.x runtime libs (built from source in the Docker image;
 	# Debian trixie only ships 1.9.9 which is too old).
 	if ls /usr/local/lib/libindi*.so* >/dev/null 2>&1; then \
-		mkdir -p $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca; \
+		mkdir -p $(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2; \
 		find /usr/local/lib -name 'libindi*.so*' ! -type d \
-			-exec cp -P {} $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca/ \;; \
+			-exec cp -P {} $(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2/ \;; \
 	fi
 
 # Tell dh_shlibdeps where to find bundled libraries (INDI 2.x + any future
 # proprietary camera libs when OPENSOURCE_ONLY=0).
 # --ignore-missing-info suppresses errors for libs not owned by any .deb package.
 override_dh_shlibdeps:
-	dh_shlibdeps -l$(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca \
+	dh_shlibdeps -l$(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2 \
 		--dpkg-shlibdeps-params=--ignore-missing-info
 
 # dwz can fail on large C++ binaries — skip it

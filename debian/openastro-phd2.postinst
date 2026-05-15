@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Create the openastro-phd2 system user if it does not exist.
+        # (Renamed from phd2-alpaca in 2.0.0; existing installs of the
+        # phd2-alpaca package must be `apt remove`d before installing this.)
+        if ! getent passwd openastro-phd2 > /dev/null 2>&1; then
+            adduser --system --group \
+                --no-create-home \
+                --home /var/lib/openastro-phd2 \
+                --gecos "OpenAstro PHD2 Guiding Server" \
+                openastro-phd2
+        fi
+
+        # Create working directory for PHD2 state (logs, calibration data, profiles)
+        if [ ! -d /var/lib/openastro-phd2 ]; then
+            mkdir -p /var/lib/openastro-phd2
+        fi
+        chown openastro-phd2:openastro-phd2 /var/lib/openastro-phd2
+
+        # Grant plugdev membership for USB camera/guide port access
+        if getent group plugdev > /dev/null 2>&1; then
+            usermod -aG plugdev openastro-phd2 || true
+        fi
+
+        # Grant dialout membership for serial guide port access
+        if getent group dialout > /dev/null 2>&1; then
+            usermod -aG dialout openastro-phd2 || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#

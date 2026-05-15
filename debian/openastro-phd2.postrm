@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        # Remove the system user created during install
+        if getent passwd openastro-phd2 > /dev/null 2>&1; then
+            deluser --system openastro-phd2 || true
+        fi
+        if getent group openastro-phd2 > /dev/null 2>&1; then
+            delgroup --system openastro-phd2 || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#

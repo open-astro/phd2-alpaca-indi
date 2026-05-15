@@ -158,9 +158,13 @@ if (Test-Path $readmeTemplate) {
     [System.IO.File]::WriteAllText($readmeOutput, $readmeContent, $utf8NoBom)
 }
 
-# Create installer
+# Create installer. Output filename uses the openastro-phd2-<version>-<arch>
+# convention shared with the macOS .dmg and Linux .deb produced by the
+# sibling build scripts. Inno Setup's OutputBaseFilename default in
+# phd2.iss.in is overridden via the /F flag here.
 Write-Host "Creating installer..." -ForegroundColor Yellow
-$installerName = "phd2$InstallerArch-v$fullVersion-installer"
+$archSuffix = $InstallerArch.TrimStart("-")  # "-x64" -> "x64"
+$installerName = "openastro-phd2-$fullVersion-$archSuffix"
 & $isccPath $issOutput "/F$installerName"
 
 if ($LASTEXITCODE -ne 0) {

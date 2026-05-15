@@ -66,9 +66,11 @@ First clean build takes 10-60 minutes (vcpkg builds OpenCV from source); subsequ
 
 Each platform has a packaging script that produces a redistributable artifact:
 
-- **Linux:** `./build-deb.sh` -> `.deb` package
-- **macOS:** `./build-dmg.sh` -> `tmp/PHD2-<version>-macOS-arm64.dmg` (bundles every Homebrew dylib into the `.app` so end users don't need Homebrew; unsigned, so first launch requires right-click -> Open)
-- **Windows:** `.\build-exe.ps1` -> `tmp\phd2x64-v<version>-installer.exe` (Inno Setup-driven installer that bundles every vcpkg-built dependency DLL — wxWidgets, OpenCV, curl, libINDI, cfitsio, etc. — so end users don't need vcpkg or VS runtime; unsigned, so Windows SmartScreen will warn on first launch, click "More info" -> "Run anyway"). Requires [Inno Setup 5](https://jrsoftware.org/isinfo.php) at `C:\Program Files\Inno Setup 5\ISCC.exe` (or the `(x86)` path).
+All three packaging scripts produce a consistently-named artifact: `openastro-phd2-<version>-<arch>.<ext>`.
+
+- **Linux:** `./build-deb.sh` -> `../openastro-phd2-<version>-<amd64|arm64>.deb`. The package internal name is `openastro-phd2` (renamed from `phd2-alpaca` in 2.0.0; `Conflicts`/`Replaces` metadata lets dpkg handle the transition cleanly, but existing `phd2-alpaca` installs need to be `apt remove`d first).
+- **macOS:** `./build-dmg.sh` -> `tmp/openastro-phd2-<version>-arm64.dmg` (bundles every Homebrew dylib into the `.app` so end users don't need Homebrew; unsigned, so first launch requires right-click -> Open).
+- **Windows:** `.\build-exe.ps1` -> `tmp\openastro-phd2-<version>-x64.exe` (Inno Setup-driven installer that bundles every vcpkg-built dependency DLL — wxWidgets, OpenCV, curl, libINDI, cfitsio, etc. — so end users don't need vcpkg or VS runtime; unsigned, so Windows SmartScreen will warn on first launch, click "More info" -> "Run anyway"). Requires [Inno Setup 5](https://jrsoftware.org/isinfo.php) at `C:\Program Files\Inno Setup 5\ISCC.exe` (or the `(x86)` path).
 
 **All three build scripts run the full test suite before packaging. If any test fails, no installer is produced.** Fix the failing tests, or pass `-DBUILD_TESTING=OFF` at configure time to drop the test build entirely.
 
