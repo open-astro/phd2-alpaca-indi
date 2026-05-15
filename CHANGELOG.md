@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-05-15
+
 ### Added
 - Unit test suite covering the API contracts and pure math the fork ships, wired into `enable_testing()` so `ctest` runs alongside the existing GP tests. New `option(PHD_BUILD_TESTS ON)` defaults the suite ON so `build-deb.sh` (via `dh_auto_test`), `build-dmg.sh`, and `build-exe.ps1` all pick it up automatically — pass `-DPHD_BUILD_TESTS=OFF` to skip. Six new test executables under `tests/`: `test_json_parser` (the deserializer that backs every Alpaca response and event-server inbound RPC); `test_jsonrpc_schema` (contract test for the documented event-server message shapes — `Version`, `AppState`, `SettleDone`, `Settling`, `StarSelected`, JSON-RPC envelope, `get_profiles`, `get_profile`, `get_lock_shift_params` — so a downstream-visible field rename surfaces at PR time instead of via a Discord report); `test_alpaca_schema` (Alpaca standard envelope, `ErrorNumber`/`ErrorMessage` extraction including the float-coerced lenient path, camera/telescope `Value` shapes, the property-name fallback used when servers omit the standard wrapper, the management API `apiversions`/`configureddevices` shapes, the discovery UDP `{"AlpacaPort": N}` reply); `test_discovery_logic` (host:port parse contract and the `std::set<wxString>` dedupe model shared by `AlpacaDiscovery` and `INDIDiscovery`); `test_indi_discovery` (INDI-only subnet enumeration math — prefix clamping `16..30` with `/24` fallback, mask construction, loopback skip, scan-range network/broadcast skip, plus the "always probe `127.0.0.1`" contract from the 1.3.0 loopback fix that lets headless Pi setups discover a same-box INDI server); `test_guide_algorithm_math` (math-twin pinning of `identity`, `hysteresis`, and `resistswitch` `result()` curves, with the production line numbers referenced in test comments so any formula edit forces a deliberate update on both sides). Build infra uses a `tests/include/phd.h` shadow + `-include` force-include to neutralise `src/phd.h`'s wxWidgets transitive pull on test targets that don't need it. New `tests/README.md` documents the per-suite test style (real / fixture-contract / model / math-twin) and the deferred items: Lowpass/Lowpass2/ZFilter (need `WindowedAxisStats` / `ZFilterFactory`), star detection (needs `usImage`), calibration math (needs `Mount` / `Scope`), and end-to-end testing of `CameraAlpaca::Capture()`'s bounded-retry fix from e7a91ddc.
 - `/release` slash command that bumps `version.md`, closes `## [Unreleased]` into a numbered version section, gathers commit references via `git log`, and creates the release commit.
@@ -71,6 +73,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `build-exe.ps1` aborted with `CTest not found at 'ctest.exe'` even when `ctest` was on `PATH`. `Get-Command ctest` returns a `CommandInfo` object whose default string form is just the command's `.Name`; the script then called `Test-Path` on that, which looked for a literal `ctest.exe` in the current directory. Now extracts `.Source` when `Get-Command` succeeds so `Test-Path` and the invocation see the resolved full path.
 - `build-exe.ps1` packaging step aborted with `Source file ... msvcr120.dll does not exist`. `phd2.iss.in` still listed `msvcr120.dll` — the **Visual C++ 2013** C runtime — but the fork builds with VS 2022, which produces the VC 14.x runtime (`vcruntime140.dll` / `msvcp140.dll`) instead. Removed the dead entry and added a comment noting the absence is intentional so a future maintainer doesn't add it back.
 - Test binaries on Windows failed to compile with `Cannot open include file: 'phd_version.h'`. `tests/CMakeLists.txt` set `target_compile_options(... -include <shadow phd.h>)`, which is GCC/Clang force-include syntax; MSVC silently emits warning D9002 and ignores it, so the shadow header was never active and the real `src/phd.h` won normal lookup (and pulled in `phd_version.h`, generated only into the main build target's include path). Branched on `MSVC` to emit `/FI<file>` instead, which is MSVC's force-include flag.
+
+### Commit References
+- `6ee83d07` - Widen GPTest covariance tolerance so Debian build stops failing
+- `81588a67` - Repair Windows packaging build broken by the test-gate commit
+- `94c80630` - Add unit test suite and gate every packaging build on it passing
+- `26923689` - Seed std::srand in GPTest fixture so covariance test is deterministic
+- `e7a91ddc` - Bound Alpaca AbortExposure retry so Stop during Looping no longer hangs PHD2
+- `b0eb5f0e` - Drop redundant per-window SetCursor in discovery polling loops
+- `2e611ba9` - Probe loopback in INDI discovery so same-box servers are found
+- `5a22621a` - Finish OpenAstro rebrand, fix INDI/Alpaca dialog UX on macOS
+- `cfad5f23` - Center every dialog on the main window, ship drag-to-Applications DMG
+- `88578c56` - Add native Apple Silicon (arm64) macOS build, ship redistributable DMG
+- `8035cb8b` - Address CodeRabbit review on PR #9
+- `f953b40a` - Disable INDI_BUILD_COMMON to skip driver-side deps
+- `2cf0a5ac` - Remove libusb and vendored openssag (dead code)
+- `b844cf80` - Bump GoogleTest from v1.14.0 to v1.17.0
+- `03f62cbd` - Bump libINDI from v2.1.6 to v2.2.1.1
+- `08f754d4` - Bump vcpkg pin to 2026.03.18
+- `9cdf439c` - Drop x86 wiring from CMake and Windows build scripts
+- `bf83f239` - Remove dead 32-bit Windows binary assets
+- `3f4860af` - Refresh About dialog maintainers and fix stale Homepage URLs
+- `f6a5a8ef` - Backfill CHANGELOG Unreleased for the C++20 modernization commit
+- `9a297da2` - Narrow Linux build scripts to Debian 13 Trixie, amd64/arm64
+- `4126947c` - Track CHANGELOG Unreleased in /commit and add /release skill
+- `eddc100d` - Modernize Windows build: C++20, wxWidgets 3.2 floor, x64-only
+- `9c6ae54b` - Address CodeRabbit review on PR #6
+- `0d25be58` - Update .gitignore
+- `61be36b0` - Fix .deb post-build glob to match phd2-alpaca filename
+- `539f6cdb` - Write phd2-alpaca (not phd2) as source name in synced debian/changelog
+- `8d83023e` - Extend libindi auto-detect to .deb build path
+- `36753c43` - Address CodeRabbit review on PR #5
 
 ## [1.3.0] - 2026-05-12
 
