@@ -52,6 +52,9 @@
 # include <wx/textctrl.h>
 # include <wx/dialog.h>
 
+# include <chrono>
+# include <future>
+
 enum
 {
     MCONNECT = 101,
@@ -183,6 +186,10 @@ INDIConfig::INDIConfig(wxWindow *parent, const wxString& title, IndiDevType devt
     SetSizer(sizer);
     sizer->SetSizeHints(this);
     sizer->Fit(this);
+
+    // Centre on the parent window so the dialog appears next to whatever
+    // spawned it (wizard or gear dialog) instead of at the OS-default position.
+    CentreOnParent();
 
     UpdateControlStates();
 }
@@ -327,11 +334,29 @@ void INDIConfig::OnDiscover(wxCommandEvent& WXUNUSED(evt))
     discoverStatus->SetLabel(_("Discovering..."));
     discoverButton->Enable(false);
     serverList->Clear();
-    // Force the label to repaint before we block on the scan.
+    // Force the label to repaint before we kick off the scan.
     Update();
     wxYieldIfNeeded();
 
-    wxArrayString servers = INDIDiscovery::DiscoverServers(2);
+    // Run discovery on a worker thread and pump the UI event loop while we
+    // wait. DiscoverServers blocks ~2s on parallel TCP probes; on the main
+    // thread that approaches the macOS beachball threshold and freezes the
+    // dialog. Debug.Write is wxCriticalSection-protected, so off-main-thread
+    // logging during discovery is safe.
+    //
+    // Re-asserting the standard cursor inside the loop is a macOS workaround:
+    // wxOSX (and AppKit when an event handler runs > ~2s) will swap to a
+    // wait/watch cursor on its own. Only the global wxSetCursor() override
+    // wins during a long handler — per-window SetCursor() doesn't reach
+    // AppKit's busy-cursor logic — so that's the only call we make.
+    auto fut = std::async(std::launch::async, []() { return INDIDiscovery::DiscoverServers(2); });
+    while (fut.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready)
+    {
+        wxYield();
+        wxSetCursor(*wxSTANDARD_CURSOR);
+    }
+    wxArrayString servers = fut.get();
+    wxSetCursor(wxNullCursor);
     Debug.Write(
         wxString::Format("INDIConfig::OnDiscover: found %u server(s)\n", static_cast<unsigned int>(servers.GetCount())));
 

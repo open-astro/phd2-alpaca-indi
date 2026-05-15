@@ -176,6 +176,7 @@ StarCrossDialog::StarCrossDialog(wxWindow *parent)
     vSizer->Add(btnSizer, wxSizerFlags().Center().Border(wxALL, 10));
 
     SetSizerAndFit(vSizer);
+    CentreOnParent();
     if (!pConfig->Profile.HasEntry("/SCT/PulseCount"))
         SuggestParams(); // Offer suggestions unless user has already completed a test
 }

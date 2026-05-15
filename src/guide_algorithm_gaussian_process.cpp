@@ -181,6 +181,7 @@ GuideAlgorithmGaussianProcess::GPExpertDialog::GPExpertDialog(wxWindow *Parent)
 
     vSizer->Add(flexGrid);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 void GuideAlgorithmGaussianProcess::GPExpertDialog::AddTableEntry(wxFlexGridSizer *Grid, const wxString& Label, wxWindow *Ctrl,

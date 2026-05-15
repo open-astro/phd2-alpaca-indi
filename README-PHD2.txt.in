@@ -1,21 +1,22 @@
-Welcome to PHD2 Version @VERSION@
+Welcome to OpenAstro PHD2 Version @VERSION@
 
-PHD2 is guiding software inspired by the original PHD Guiding
-application from Stark Labs. PHD2 is both free of cost and open
-source, and development is community-driven.
+This is the OpenAstro fork of PHD2, supporting ASCOM Alpaca and INDI
+equipment drivers only. It is free, open source, and intended for use
+with AlpacaBridge and INDI server workflows.
 
 PHD2's built-in help file is an excellent way to get started using the
 program, regardless of whether you've had previous experience with the
 original PHD.
 
-To read about what is new in PHD2, please visit
+For project information, releases, and bug reports, visit
+
+   https://github.com/open-astro/phd2-alpaca-indi
+   https://openastro.net/
+
+This fork is based on PHD2 by openphdguiding.org. For questions about
+the original upstream PHD2, see
 
    https://openphdguiding.org/
-
-For questions about using the application and troubleshooting guiding,
-or for bug reports, feature requests, and questions about PHD2
-development, please join the Open PHD Guiding forum
-
    https://groups.google.com/forum/#!forum/open-phd-guiding
 
-The PHD2 Developers
+The OpenAstro Team

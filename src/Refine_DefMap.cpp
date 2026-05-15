@@ -204,6 +204,7 @@ RefineDefMap::RefineDefMap(wxWindow *parent)
     pVSizer->Add(pStatusBar, 0, wxGROW);
 
     SetSizerAndFit(pVSizer);
+    CentreOnParent();
     ShowStatus(_("Adjust sliders to increase/decrease pixels marked as bad"), false);
 }
 

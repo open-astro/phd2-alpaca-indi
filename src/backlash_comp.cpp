@@ -607,6 +607,7 @@ BacklashGraph::BacklashGraph(wxDialog *parent, const std::vector<double>& northS
     vSizer->Add(CreateButtonSizer(wxOK), wxSizerFlags(0).Expand().Border(wxALL, 10));
 
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 wxBitmap BacklashGraph::CreateGraph(int bmpWidth, int bmpHeight, const std::vector<double>& northSteps,

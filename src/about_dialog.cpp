@@ -234,6 +234,7 @@ AboutDialog::AboutDialog()
     wxBoxSizer *pTopLevelSizer = new wxBoxSizer(wxVERTICAL);
     pTopLevelSizer->Add(pSizer, wxSizerFlags(0).Expand());
     SetSizerAndFit(pTopLevelSizer);
+    CentreOnParent();
 }
 
 AboutDialog::~AboutDialog(void)

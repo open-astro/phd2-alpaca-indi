@@ -284,6 +284,7 @@ CalibrationAssistant::CalibrationAssistant()
     m_pCurrEast->Enable(false);
     SetAutoLayout(true);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
     m_pExplainBtn->Enable(false);
 }
 
@@ -1124,6 +1125,7 @@ CalCustomDialog::CalCustomDialog(CalibrationAssistant *Parent, int DefaultHA, in
 
     SetAutoLayout(true);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 };
 
 void CalCustomDialog::OnOk(wxCommandEvent& evt)
@@ -1175,6 +1177,7 @@ CalAssistSanityDialog::CalAssistSanityDialog(CalibrationAssistant *Parent, const
 
     SetAutoLayout(true);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 void CalAssistSanityDialog::OnCancel(wxCommandEvent& evt)
@@ -1300,6 +1303,7 @@ CalAssistExplanationDialog::CalAssistExplanationDialog(const wxString& Why)
 
     SetAutoLayout(true);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 wxDialog *CalibrationAssistantFactory::MakeCalibrationAssistant()

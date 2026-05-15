@@ -130,6 +130,7 @@ CamCalImportDialog::CamCalImportDialog(wxWindow *parent)
 
     // PopulateLBs(darksLB, bpmLB);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 
     m_activeProfileName = pConfig->GetCurrentProfile();
     m_sourceDarksProfileId = -1;

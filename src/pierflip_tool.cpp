@@ -133,7 +133,7 @@ PierFlipCalToolWin::PierFlipCalToolWin()
     m_timer.SetOwner(this, wxID_ANY);
     m_status = CreateStatusBar(1, 0, wxID_ANY);
 
-    Centre(wxBOTH);
+    CentreOnParent();
 
     // Connect Events
     m_restart->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(PierFlipCalToolWin::OnRestartClick), nullptr, this);

@@ -72,7 +72,7 @@ bool CalReviewDialog::Create(wxWindow *parent, const wxString& caption, const wx
     CreateControls();
     GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
-    Centre();
+    CentreOnParent();
     return true;
 }
 
@@ -348,7 +348,7 @@ void CalReviewDialog::CreateDataGrids(wxPanel *parentPanel, wxSizer *parentHSize
         wxString sPierSide = calBaseline.pierSide == PIER_SIDE_EAST ? _("East")
             : calBaseline.pierSide == PIER_SIDE_WEST                ? _("West")
                                                                     : NA_STR;
-        cfgGrid->SetCellValue(row, col++, _(sPierSide));
+        cfgGrid->SetCellValue(row, col++, sPierSide);
 
         row++;
         col = 0;

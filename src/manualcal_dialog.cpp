@@ -87,6 +87,7 @@ ManualCalDialog::ManualCalDialog(const Calibration& cal)
     pVSizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags(0).Right().Border(wxALL, 10));
 
     SetSizerAndFit(pVSizer);
+    CentreOnParent();
 
     m_pXRate->SetFocus();
 }

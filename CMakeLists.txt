@@ -39,7 +39,7 @@ endif()
 
 # this must come before any enable_language() or project()
 if(APPLE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OSX deployment version")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0" CACHE STRING "Minimum macOS deployment version")
   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 endif()
 
@@ -476,18 +476,18 @@ macro(ADD_MSVC_PRECOMPILED_HEADER PrecompiledHeader PrecompiledSource SourcesVar
 endmacro(ADD_MSVC_PRECOMPILED_HEADER)
 
 ## #########################
-## OSX
+## macOS
 if(APPLE)
 
   # bundle definitions
-  set(MACOSX_BUNDLE_BUNDLE_NAME          PHD2 )
-  set(MACOSX_BUNDLE_GUI_IDENTIFIER       "org.openphdguiding.phd2" )
-  set(MACOSX_BUNDLE_ICON_FILE            PHD_OSX_icon.icns )
-  set(MACOSX_BUNDLE_INFO_STRING          "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}, Copyright 2010-2025 openphdguiding.org" )
+  set(MACOSX_BUNDLE_BUNDLE_NAME          "OpenAstro PHD2" )
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER       "net.openastro.phd2" )
+  set(MACOSX_BUNDLE_ICON_FILE            AppIcon.icns )
+  set(MACOSX_BUNDLE_INFO_STRING          "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}, Copyright 2026 OpenAstro" )
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}" )
   set(MACOSX_BUNDLE_LONG_VERSION_STRING  "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
   set(MACOSX_BUNDLE_BUNDLE_VERSION       "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
-  set(MACOSX_BUNDLE_COPYRIGHT            "(C) 2010-2025 openphdguiding.org" )
+  set(MACOSX_BUNDLE_COPYRIGHT            "Copyright 2026 OpenAstro. Based on PHD2 (C) 2010-2025 openphdguiding.org." )
 
   # main target
   add_executable(
@@ -509,8 +509,8 @@ if(APPLE)
   set_target_properties(
     phd2
     PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${PHD_PROJECT_ROOT_DIR}/MacOSXBundleInfo.plist.in
-    OUTPUT_NAME PHD2  # upper case on OSX
+    MACOSX_BUNDLE_INFO_PLIST ${PHD_PROJECT_ROOT_DIR}/Info.plist.in
+    OUTPUT_NAME PHD2  # upper case on macOS
   )
   target_include_directories(
     phd2
@@ -532,6 +532,11 @@ if(APPLE)
   # Camera-specific frameworks removed - Alpaca only build.
   # libusb_openphd bundling removed alongside libusb itself (this fork's
   # cameras come over Alpaca/INDI; no direct USB access from PHD2).
+  #
+  # Homebrew dylib bundling (cfitsio, wxWidgets, image libs, etc.) into
+  # PHD2.app/Contents/Frameworks/ happens in build-dmg.sh at packaging
+  # time, not here — dev incremental builds run faster against Homebrew
+  # dylibs in place, and only the redistributable .dmg needs the rewrite.
 
 elseif(WIN32)
 
@@ -658,7 +663,7 @@ foreach(lib ${PHD_LINK_EXTERNAL_RELEASE})
 endforeach()
 
 target_link_libraries(phd2
-                      MPIIS_GP GPGuider # GP Guider
+                      GPGuider # GP Guider (pulls in MPIIS_GP and MPIIS_GP_TOOLS transitively)
                       ${PHD_LINK_EXTERNAL})
 
 if(WIN32)

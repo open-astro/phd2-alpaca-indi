@@ -320,6 +320,18 @@ wxArrayString INDIDiscovery::DiscoverServers(int timeoutSeconds)
 
     // Build the full target list (all host addresses across all subnets).
     std::vector<uint32_t> targets;
+
+    // Always probe loopback (127.0.0.1) as a unicast target. INDI servers
+    // running on the same machine as PHD2 typically bind to 127.0.0.1, and
+    // EnumerateLocalSubnets() skips the loopback interface (IFF_LOOPBACK on
+    // Linux/macOS, 127.0.0.0/8 check on Windows), so 127.0.0.1 would never
+    // appear in the subnet sweep. On a headless Linux/Pi setup with no LAN
+    // interface up (or no usable subnet — e.g. only a VPN tunnel) this is
+    // the only way the local INDI server gets discovered at all. Same shape
+    // of bug as the AlpacaDiscovery::BuildBroadcastTargets() loopback fix
+    // in 1.3.0.
+    targets.push_back(0x7F000001u); // 127.0.0.1 in host byte order
+
     for (const auto& s : subnets)
     {
         uint32_t broadcast = s.network | ~s.mask;

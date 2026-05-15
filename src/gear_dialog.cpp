@@ -128,7 +128,7 @@ GearDialog::GearDialog(wxWindow *pParent)
 
     Initialize();
 
-    Centre(wxBOTH);
+    CentreOnParent();
 }
 
 GearDialog::~GearDialog()
@@ -1580,6 +1580,7 @@ NewProfileDialog::NewProfileDialog(wxWindow *parent) : wxDialog(parent, wxID_ANY
 
     sizer3->SetSizeHints(this);
     SetSizerAndFit(sizer3);
+    CentreOnParent();
 }
 
 void GearDialog::OnProfileNew(wxCommandEvent& event)
@@ -1657,7 +1658,7 @@ void GearDialog::OnProfileRename(wxCommandEvent& event)
 
     if (pConfig->GetProfileId(newname) > 0)
     {
-        wxMessageBox(_(wxString::Format("Cannot not rename profile to %s, there is already a profile with that name", newname)),
+        wxMessageBox(wxString::Format(_("Cannot rename profile to %s, there is already a profile with that name"), newname),
                      _("Error"));
         return;
     }

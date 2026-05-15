@@ -416,9 +416,19 @@ ProfileWizard::ProfileWizard(wxWindow *parent, bool showGreeting)
 
     SetAutoLayout(true);
     SetSizerAndFit(m_pvSizer);
-    CentreOnScreen();
+    // Centre on the parent (main app frame) instead of the screen so the
+    // wizard appears next to PHD2's window rather than wherever the OS
+    // happens to put it. CentreOnScreen() ignored multi-monitor setups and
+    // popped the wizard far from where the user was looking.
+    CentreOnParent();
 
-    // Special cases - neither AuxMount nor AO requires an explicit user choice
+    // Default every gear selection to "None" so the user must actively pick a
+    // driver. Without this, m_SelectedCamera / m_SelectedMount start empty and
+    // the combo falls through to whatever sorts first alphabetically (Alpaca),
+    // which makes the wizard look pre-selected and means the user has to click
+    // Alpaca a second time to actually fire the configure flow.
+    m_SelectedCamera = _("None");
+    m_SelectedMount = _("None");
     m_SelectedAuxMount = _("None");
     m_SelectedAO = _("None");
     m_SelectedRotator = _("None");
@@ -1531,6 +1541,7 @@ ConnectDialog::ConnectDialog(ProfileWizard *parent, ProfileWizard::DialogState c
 
     SetAutoLayout(true);
     SetSizerAndFit(vSizer);
+    CentreOnParent();
 }
 
 void ConnectDialog::OnYesButton(wxCommandEvent& evt)
