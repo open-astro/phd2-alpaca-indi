@@ -37,6 +37,25 @@ override_dh_auto_configure:
 	fi
 	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=$(USE_SYSTEM_LIBINDI) -DUSE_SYSTEM_GTEST=1 -DOPENSOURCE_ONLY=1
 
+# Force ctest to run even when DEB_BUILD_OPTIONS=nocheck is set. The fork
+# does not ship through Debian autobuilders, so honouring the standard
+# nocheck escape hatch isn't useful here — we'd rather catch a failing
+# test than ship a broken .deb. To skip the suite entirely, reconfigure
+# the cmake project with -DPHD_BUILD_TESTS=OFF.
+#
+# We invoke ctest directly instead of dh_auto_test because dh_auto_test
+# itself respects nocheck and short-circuits before running anything.
+# Find the cmake build dir by glob since the obj-* name varies by host
+# triplet (obj-x86_64-linux-gnu, obj-aarch64-linux-gnu, etc.).
+override_dh_auto_test:
+	@build_dir=$$(ls -d obj-*-linux-* 2>/dev/null | head -1); \
+	if [ -z "$$build_dir" ] || [ ! -f "$$build_dir/CTestTestfile.cmake" ]; then \
+		echo "ERROR: cmake build dir with CTestTestfile.cmake not found under obj-*-linux-*" >&2; \
+		exit 1; \
+	fi; \
+	echo "Running ctest in $$build_dir"; \
+	cd "$$build_dir" && ctest --output-on-failure
+
 override_dh_auto_install:
 	dh_auto_install
 	# Rename the wrapper and binary from 'phd2' to 'phd2-alpaca'

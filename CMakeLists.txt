@@ -155,6 +155,19 @@ generate_doc_targets(
 # PEC Guider, Max Planck Institute for Intelligent Systems, Tuebingen, Germany.
 add_subdirectory(contributions/MPI_IS_gaussian_process tmp_gaussian_process)
 
+# Unit tests (uses GTest fetched in thirdparty.cmake). Added BEFORE the
+# global include_directories(${phd_src_dir}) below so test targets don't
+# inherit src/ on their include path; tests/include/phd.h must shadow the
+# real one for header substitution to work.
+#
+# PHD_BUILD_TESTS defaults ON so packaging scripts (build-deb.sh,
+# build-dmg.sh, build-exe.ps1) pick the suite up automatically. Pass
+# -DPHD_BUILD_TESTS=OFF to skip building the test binaries.
+option(PHD_BUILD_TESTS "Build PHD2 unit tests" ON)
+if(PHD_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
+
 
 
 #################################################################################

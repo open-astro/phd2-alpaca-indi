@@ -281,14 +281,12 @@ $bad"
 INSTALL_DEPS=false
 CLEAN=false
 FORCE=false
-SKIP_TESTS=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install-deps) INSTALL_DEPS=true ;;
         --clean)        CLEAN=true ;;
         --force)        FORCE=true ;;
-        --skip-tests)   SKIP_TESTS=true ;;
         -h|--help)
             cat <<EOF
 Usage: $0 [OPTIONS]
@@ -299,7 +297,6 @@ Result: PHD2-<version>-macOS-arm64.dmg in tmp/
 Options:
   --install-deps   Install Homebrew build dependencies, then exit.
   --clean          Remove tmp/ before building.
-  --skip-tests     Skip the ctest suite after building.
   --force          Skip the build-dependency check entirely.
   -h, --help       Show this help.
 EOF
@@ -378,14 +375,12 @@ step "Checking library dependencies..."
 check_library_dependencies PHD2.app
 
 # ---------------------------------------------------------------------------
-# Tests
+# Tests — always run; no skip flag. A test failure aborts the .dmg build
+# (set -e is on at the top of the script). To skip the suite entirely,
+# reconfigure with -DPHD_BUILD_TESTS=OFF.
 # ---------------------------------------------------------------------------
-if "$SKIP_TESTS"; then
-    warn "Skipping ctest (--skip-tests)."
-else
-    step "Running ctest..."
-    ctest --output-on-failure
-fi
+step "Running ctest..."
+ctest --output-on-failure
 
 # ---------------------------------------------------------------------------
 # DMG creation — "drag PHD2 to Applications" install window.

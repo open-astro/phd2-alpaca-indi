@@ -85,6 +85,26 @@ The bundle is at `tmp/PHD2.app`. To produce a redistributable `.dmg`, use `./bui
 
 The `.dmg` is unsigned — first launch requires right-click → Open (or `xattr -dr com.apple.quarantine /Applications/PHD2.app`). This is normal for unsigned open-source apps; Apple Developer ID signing is a future addition.
 
+## Testing
+
+The fork ships a unit-test suite under `tests/` that runs alongside the upstream Gaussian-process tests under `contributions/MPI_IS_gaussian_process/tests/`. Tests are wired into CMake's `enable_testing()`, so once you've configured a build (any of the three `run_*` scripts above) you can run them via `ctest`:
+
+```bash
+# from the build directory (tmp/ for the run_*.sh / run_exe.bat scripts)
+cd tmp
+ctest --output-on-failure                  # all tests
+ctest -R test_alpaca_schema -V             # one suite, verbose
+ctest -L "Unit tests"                      # by label
+
+# or build & run individual suites directly
+cmake --build . --target test_json_parser
+./tests/test_json_parser
+```
+
+Currently 10 test executables (4 from upstream GP + 6 added by this fork). The fork's suites are read-only and need no devices, network, or wxWidgets — they cover the JSON parser, the event-server JSON-RPC schema downstream consumers depend on (NINA / KStars / web UI), the Alpaca client/discovery JSON contracts, the INDI-specific subnet/scan math (loopback skip, prefix clamping, network/broadcast-skip, always-probe-127.0.0.1), the shared host:port parsing + dedupe model, and math-twin pinning of the simple guide algorithms (identity / hysteresis / resistswitch). See `tests/README.md` for the architectural notes and what's deferred.
+
+If you want to disable the test build (e.g. for a packaging build), pass `-DBUILD_TESTING=OFF` to cmake.
+
 ## License
 
 This project remains under the original PHD2 licensing terms. See [LICENSE.txt](LICENSE.txt) for details.
