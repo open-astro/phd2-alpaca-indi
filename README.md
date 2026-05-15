@@ -47,7 +47,7 @@ brew install cmake wxwidgets cfitsio libnova gettext
 ./run_dmg.sh --build           # configure + parallel build
 ```
 
-The bundle is at `tmp/PHD2.app`.
+The bundle is at `tmp/OpenAstro PHD2.app`.
 
 ### Windows
 

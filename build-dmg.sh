@@ -8,7 +8,7 @@
 #   openastro-phd2-<version>-arm64.dmg
 #
 # All Homebrew dylibs that PHD2 links against (wxWidgets, cfitsio, libnova
-# transitive image libs, etc.) are copied into PHD2.app/Contents/Frameworks/
+# transitive image libs, etc.) are copied into "OpenAstro PHD2.app"/Contents/Frameworks/
 # and their install names rewritten via install_name_tool, so the DMG runs on
 # end-user machines without Homebrew installed.
 
@@ -101,7 +101,7 @@ read_version() {
 # ---------------------------------------------------------------------------
 # is_external_dylib path
 #   Returns 0 if the given path is a Homebrew/MacPorts/local dylib that needs
-#   to be bundled into PHD2.app, 1 if it's a system dylib (/usr/lib, /System)
+#   to be bundled into the .app, 1 if it's a system dylib (/usr/lib, /System)
 #   or already-bundled (@executable_path/...).
 # ---------------------------------------------------------------------------
 is_external_dylib() {
@@ -364,15 +364,22 @@ make -j"$cores" indi
 step "Building PHD2 (parallel x$cores)..."
 make -j"$cores"
 
+# The 2.0.0 rebrand renamed the CMake OUTPUT_NAME to "OpenAstro PHD2" so the
+# .app file in /Applications no longer collides on disk with upstream PHD2's
+# bundle. Capture the name once here; the rest of the script and the
+# AppleScript heredoc below reference it via this variable so the spaces are
+# quoted consistently.
+APP_BUNDLE="OpenAstro PHD2.app"
+
 # ---------------------------------------------------------------------------
-# Bundle Homebrew dylibs into PHD2.app/Contents/Frameworks/ so the .app
+# Bundle Homebrew dylibs into <APP_BUNDLE>/Contents/Frameworks/ so the .app
 # runs on machines without Homebrew. Recursive: walks transitive deps.
 # ---------------------------------------------------------------------------
-step "Bundling Homebrew dylibs into PHD2.app/Contents/Frameworks/..."
-bundle_app_dylibs PHD2.app
+step "Bundling Homebrew dylibs into ${APP_BUNDLE}/Contents/Frameworks/..."
+bundle_app_dylibs "$APP_BUNDLE"
 
 step "Checking library dependencies..."
-check_library_dependencies PHD2.app
+check_library_dependencies "$APP_BUNDLE"
 
 # ---------------------------------------------------------------------------
 # Tests — always run; no skip flag. A test failure aborts the .dmg build
@@ -383,13 +390,13 @@ step "Running ctest..."
 ctest --output-on-failure
 
 # ---------------------------------------------------------------------------
-# DMG creation — "drag PHD2 to Applications" install window.
+# DMG creation — "drag OpenAstro PHD2 to Applications" install window.
 #
 # Three-step process:
-#   1. Build a writable scratch DMG (UDRW) seeded with PHD2.app.
+#   1. Build a writable scratch DMG (UDRW) seeded with the .app bundle.
 #   2. Mount it, add the /Applications symlink and .background/ image, then
 #      drive Finder via AppleScript to set the icon view: 640×360 window,
-#      icon size 128, our PNG as background, PHD2.app on the left and the
+#      icon size 128, our PNG as background, the .app on the left and the
 #      Applications shortcut on the right.
 #   3. Detach and convert to a compressed read-only UDZO for shipping.
 #
@@ -404,7 +411,10 @@ BG_IMG="${ROOT_DIR}/packaging/macos/background.png"
 [[ -f "$BG_IMG" ]] || err "Missing DMG background image: $BG_IMG"
 
 STAGING_DMG="phd2-staging-$$.dmg"
-VOLNAME="PHD2"
+# Volume label users see when the DMG is mounted (Finder sidebar, /Volumes/...).
+# Pre-2.0.0 was just "PHD2" which was inconsistent with the rebranded .app
+# inside; now matches the bundle's display name.
+VOLNAME="OpenAstro PHD2"
 MOUNTPOINT="/Volumes/${VOLNAME}"
 
 rm -f "$DMG_NAME" "$STAGING_DMG"
@@ -413,13 +423,13 @@ if [[ -d "$MOUNTPOINT" ]]; then
     hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1 || true
 fi
 
-# Size the writable DMG to fit PHD2.app + ~20 MB headroom for the symlink,
+# Size the writable DMG to fit the .app + ~20 MB headroom for the symlink,
 # background image, and HFS+ metadata.
-APP_KB=$(du -sk PHD2.app | awk '{print $1}')
+APP_KB=$(du -sk "$APP_BUNDLE" | awk '{print $1}')
 DMG_KB=$(( APP_KB + 20480 ))
 
 hdiutil create \
-    -srcfolder PHD2.app \
+    -srcfolder "$APP_BUNDLE" \
     -volname "$VOLNAME" \
     -fs HFS+ \
     -fsargs "-c c=64,a=16,e=16" \
@@ -485,7 +495,7 @@ tell application "Finder"
             set text color of viewOptions to {65535, 65535, 65535}
         end try
         set background picture of viewOptions to file ".background:background.png"
-        set position of item "PHD2.app" of container window to {175, 450}
+        set position of item "${APP_BUNDLE}" of container window to {175, 450}
         set position of item "Applications" of container window to {525, 450}
         update without registering applications
         delay 2
@@ -511,4 +521,4 @@ echo -e "  ${CYAN}${DMG_PATH}${NC}"
 ls -la "$DMG_PATH"
 echo ""
 echo "Mount with: open '$DMG_PATH'"
-echo "Drag PHD2.app to /Applications to install."
+echo "Drag '${APP_BUNDLE}' to /Applications to install."
