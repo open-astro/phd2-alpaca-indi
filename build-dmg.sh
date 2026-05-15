@@ -216,8 +216,15 @@ bundle_dylib() {
 #   paths to point at the bundled copies. Re-signs the executable.
 # ---------------------------------------------------------------------------
 bundle_app_dylibs() {
-    local app="$1" exe="$1/Contents/MacOS/PHD2"
+    # Binary basename inside Contents/MacOS/ matches CMake's OUTPUT_NAME.
+    # Pre-2.0.0 it was "PHD2"; the rebrand commit set OUTPUT_NAME to
+    # "OpenAstro PHD2", so this path picks up the new name via APP_EXE.
+    # If the file isn't there, fail loud — silent failure here means we
+    # ship an unbundled binary with raw /opt/homebrew/... loads, which
+    # crashes at launch on any Mac without Homebrew.
+    local app="$1" exe="$1/Contents/MacOS/${APP_EXE}"
     local dep dep_load
+    [[ -f "$exe" ]] || err "Bundle binary not found: $exe (did CMake OUTPUT_NAME drift from APP_EXE?)"
     BUNDLED_NAMES=()
 
     while read -r dep; do
@@ -241,8 +248,9 @@ bundle_app_dylibs() {
 # ---------------------------------------------------------------------------
 check_library_dependencies() {
     local app="$1"
-    local exe="$app/Contents/MacOS/PHD2"
+    local exe="$app/Contents/MacOS/${APP_EXE}"
     local stray
+    [[ -f "$exe" ]] || err "Bundle binary not found: $exe (did CMake OUTPUT_NAME drift from APP_EXE?)"
     stray=$(otool -L "$exe" | tail -n +2 | awk '{print $1}' \
         | grep -vE '^@(executable_path|rpath|loader_path)/' \
         | grep -vE '^/usr/lib/' \
@@ -366,10 +374,14 @@ make -j"$cores"
 
 # The 2.0.0 rebrand renamed the CMake OUTPUT_NAME to "OpenAstro PHD2" so the
 # .app file in /Applications no longer collides on disk with upstream PHD2's
-# bundle. Capture the name once here; the rest of the script and the
-# AppleScript heredoc below reference it via this variable so the spaces are
-# quoted consistently.
+# bundle. CMake's MACOSX_BUNDLE target uses OUTPUT_NAME for both the .app
+# filename AND the binary inside Contents/MacOS/ — so APP_BUNDLE and APP_EXE
+# move in lockstep and must match what CMakeLists.txt sets. Both names are
+# captured here so the rest of the script (and the AppleScript heredoc, and
+# the bundle/check helpers above) reference them via these variables and
+# keep the spaces quoted consistently.
 APP_BUNDLE="OpenAstro PHD2.app"
+APP_EXE="OpenAstro PHD2"
 
 # ---------------------------------------------------------------------------
 # Bundle Homebrew dylibs into <APP_BUNDLE>/Contents/Frameworks/ so the .app
