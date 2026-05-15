@@ -7,15 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- `test_jsonrpc_schema.cpp` now type-guards every `json_value` union access. Added `ASSERT_EQ(units->type, JSON_STRING)` and `ASSERT_EQ(axes->type, JSON_STRING)` before the `string_value` reads in the `GetLockShiftParams` enabled branch, and upgraded the `expect_string_field` / `expect_numeric_field` / `expect_bool_field` helpers from `EXPECT_EQ` to `ASSERT_EQ` on the type check. Wrong-type accesses now hard-stop the test instead of progressing to UB on a mismatched union member. CodeRabbit feedback on PR #12.
-
 ### Changed
 - `debian/rules` `override_dh_auto_test` now resolves the cmake build dir deterministically: tries `obj-$(DEB_HOST_GNU_TYPE)` first (the canonical path `dh_auto_configure` creates), and only falls back to a **sorted** `obj-*-linux-*` glob if that's missing. Previously used `ls -d obj-*-linux-* | head -1` which would pick an arbitrary directory if cross-build residue from a prior arch was sitting in the tree, silently invalidating the test gate. CodeRabbit feedback on PR #12.
 - README "Building Installers" Windows entry expanded with output filename, bundled-dependency list (vcpkg DLLs: wxWidgets, OpenCV, curl, libINDI, cfitsio), unsigned/SmartScreen caveat, and Inno Setup install path — matching the level of detail the macOS entry already had.
 
 ### Fixed
+- `test_jsonrpc_schema.cpp` now type-guards every `json_value` union access. Added `ASSERT_EQ(units->type, JSON_STRING)` and `ASSERT_EQ(axes->type, JSON_STRING)` before the `string_value` reads in the `GetLockShiftParams` enabled branch, and upgraded the `expect_string_field` / `expect_numeric_field` / `expect_bool_field` helpers from `EXPECT_EQ` to `ASSERT_EQ` on the type check. Wrong-type accesses now hard-stop the test instead of progressing to UB on a mismatched union member. CodeRabbit feedback on PR #12.
 - `test_jsonrpc_schema::JsonRpcSchema.SettleDoneEvent` now asserts `Error` is absent on success (Status==0) responses, not just on the failure branch. Schema spec says Error exists iff Status≠0; downstream consumers (NINA, KStars) read `Error` as a truthy "did the settle fail" indicator, so a spurious empty-string Error on success would look like a settle failure to them. CodeRabbit feedback on PR #12.
+- `test_jsonrpc_schema::JsonRpcSchema.ResponseEnvelopeSuccess` and `ResponseEnvelopeError` now assert envelope exclusivity (`result` xor `error`). Previously each branch only asserted the required key was present; a mixed envelope with both keys would pass both tests silently. Per JSON-RPC 2.0 the response MUST have exactly one of `result` or `error`. CodeRabbit feedback on PR #12.
+- `test_jsonrpc_schema::JsonRpcSchema.GetLockShiftParams` disabled-branch now asserts `rate`, `units`, and `axes` are absent. Comment said "only enabled is present" but the test didn't enforce it; a server that started emitting `rate`/`units`/`axes` alongside `enabled=false` would pass the test. CodeRabbit feedback on PR #12.
 
 ## [2.0.0] - 2026-05-15
 

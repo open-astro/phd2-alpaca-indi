@@ -185,6 +185,9 @@ TEST(JsonRpcSchema, ResponseEnvelopeSuccess)
     expect_string_field(p.Root(), "jsonrpc");
     EXPECT_STREQ(child(p.Root(), "jsonrpc")->string_value, "2.0");
     ASSERT_NE(child(p.Root(), "result"), nullptr);
+    // JSON-RPC 2.0: the response MUST have exactly one of `result` or
+    // `error`. Mixed envelopes are invalid and would confuse clients.
+    EXPECT_EQ(child(p.Root(), "error"), nullptr);
     expect_numeric_field(p.Root(), "id");
 }
 
@@ -200,6 +203,8 @@ TEST(JsonRpcSchema, ResponseEnvelopeError)
     const json_value *err = child(p.Root(), "error");
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->type, JSON_OBJECT);
+    // Mirror exclusivity: error envelope MUST NOT carry a `result`.
+    EXPECT_EQ(child(p.Root(), "result"), nullptr);
     expect_numeric_field(err, "code");
     expect_string_field(err, "message");
 }
@@ -278,6 +283,12 @@ TEST(JsonRpcSchema, GetLockShiftParams)
         const json_value *r = child(p.Root(), "result");
         ASSERT_NE(r, nullptr);
         expect_bool_field(r, "enabled");
+        // rate/units/axes are conditionally emitted only when enabled=true
+        // (event_server.cpp ~line 2873-2876). Pin the absence so a server
+        // that starts unconditionally including them is caught.
+        EXPECT_EQ(child(r, "rate"), nullptr);
+        EXPECT_EQ(child(r, "units"), nullptr);
+        EXPECT_EQ(child(r, "axes"), nullptr);
     }
     {
         // shift enabled — rate/units/axes are present
