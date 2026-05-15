@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `debian/rules` no longer passes the obsolete `-DUSE_SYSTEM_LIBUSB=1` to `dh_auto_configure`; the option was removed from the CMake project alongside libusb itself.
 - x64 architecture guard in `thirdparty/thirdparty.cmake` now also checks `CMAKE_SIZEOF_VOID_P` in addition to `CMAKE_GENERATOR_PLATFORM`, so 32-bit toolchains can't slip through when using Ninja or Unix Makefiles (where `CMAKE_GENERATOR_PLATFORM` is empty).
 - Fenced code blocks in `.claude/commands/release.md` now carry language tags (`text` / `markdown`) to satisfy markdownlint MD040.
+- Alpaca camera hung PHD2 when Stop was pressed during Looping against servers that ack `AbortExposure` but never flip `imageready` to true (e.g. ASCOM Remote Server forwarding a `StopExposure`-only driver). `CameraAlpaca::Capture()` now sends the abort exactly once per exposure and caps the post-abort wait at 3 s before bailing out, instead of hammering the server every poll iteration until the user force-quits. Fixes #7.
 
 ## [1.3.0] - 2026-05-12
 
