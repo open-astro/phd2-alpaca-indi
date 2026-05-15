@@ -817,13 +817,20 @@ bool CameraAlpaca::Capture(usImage& img, const CaptureParams& captureParams)
 
     CameraWatchdog watchdog(duration, GetTimeoutMs());
 
+    // Cap the post-abort wait: some Alpaca servers ack abort but never flip imageready (issue #7).
+    static const long kPostAbortTimeoutMs = 3000;
+    bool abortAttempted = false;
+    wxStopWatch postAbortTimer;
+
     if (duration > 100)
     {
         // wait until near end of exposure
-        if (WorkerThread::MilliSleep(duration - 100, WorkerThread::INT_ANY) &&
-            (WorkerThread::TerminateRequested() || AbortExposure()))
+        if (WorkerThread::MilliSleep(duration - 100, WorkerThread::INT_ANY))
         {
-            return true;
+            if (WorkerThread::TerminateRequested() || AbortExposure())
+                return true;
+            abortAttempted = true;
+            postAbortTimer.Start();
         }
     }
 
@@ -840,9 +847,22 @@ bool CameraAlpaca::Capture(usImage& img, const CaptureParams& captureParams)
         }
         if (ready)
             break;
-        if (WorkerThread::InterruptRequested() && (WorkerThread::TerminateRequested() || AbortExposure()))
+        if (WorkerThread::InterruptRequested())
         {
-            return true;
+            if (WorkerThread::TerminateRequested())
+                return true;
+            if (!abortAttempted)
+            {
+                if (AbortExposure())
+                    return true;
+                abortAttempted = true;
+                postAbortTimer.Start();
+            }
+            else if (postAbortTimer.Time() > kPostAbortTimeoutMs)
+            {
+                Debug.Write("Alpaca Camera: abort acknowledged but ImageReady never went true; giving up\n");
+                return true;
+            }
         }
         if (watchdog.Expired())
         {
