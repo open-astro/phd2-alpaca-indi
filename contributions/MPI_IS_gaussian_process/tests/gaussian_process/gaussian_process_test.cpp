@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <iostream>
+#include <cstdlib>
 #include "math_tools.h"
 #include "gaussian_process.h"
 #include "covariance_functions.h"
@@ -49,6 +50,11 @@ class GPTest : public ::testing::Test
 public:
     GPTest() : random_vector_(11), location_vector_(11), hyper_parameters_(4), extra_parameters_(1)
     {
+        // Eigen::MatrixXd::setRandom() ultimately calls std::rand(); seed deterministically
+        // so the statistical-expectation tests (drawSamples_prior_mean_test, _covariance_test)
+        // produce the same samples on every run (issue #8).
+        std::srand(1);
+
         random_vector_ << -0.1799, -1.4215, -0.2774, 2.6056, 0.6471, -0.4366, 1.3820, 0.4340, 0.8970, -0.7286, -1.7046;
         location_vector_ << 0, 0.1000, 0.2000, 0.3000, 0.4000, 0.5000, 0.6000, 0.7000, 0.8000, 0.9000, 1.0000;
         hyper_parameters_ << 1, 2, 1, 2;
