@@ -137,7 +137,7 @@ if (( DO_BUILD )); then
     echo "Building with $JOBS parallel jobs..."
     cmake --build "$TMPDIR_NAME" --parallel "$JOBS"
     echo
-    echo "Done. Bundle: $TMPDIR_NAME/PHD2.app"
+    echo "Done. Bundle: $TMPDIR_NAME/OpenAstro PHD2.app"
 else
     echo
     echo "Configure complete. To build:"

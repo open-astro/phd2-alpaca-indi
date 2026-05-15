@@ -28,7 +28,7 @@ override_dh_auto_configure:
 	CHANGELOG_VERSION="$$(dpkg-parsechangelog -S Version | sed -E 's/-[^-]+$$//')"; \
 	if [ "$$CHANGELOG_VERSION" != "$$VERSION" ]; then \
 		echo "Syncing debian/changelog version $$CHANGELOG_VERSION -> $$VERSION"; \
-		sed -i -E "1 s/^phd2-alpaca \\([^)]*\\) /phd2-alpaca ($$VERSION) /" $(CURDIR)/debian/changelog; \
+		sed -i -E "1 s/^openastro-phd2 \\([^)]*\\) /openastro-phd2 ($$VERSION) /" $(CURDIR)/debian/changelog; \
 	fi
 	@if [ "$(USE_SYSTEM_LIBINDI)" = "1" ]; then \
 		echo "debian/rules: USE_SYSTEM_LIBINDI=1 (system libindi >= 2.0.0)"; \
@@ -37,31 +37,64 @@ override_dh_auto_configure:
 	fi
 	dh_auto_configure -- -DUSE_SYSTEM_LIBINDI=$(USE_SYSTEM_LIBINDI) -DUSE_SYSTEM_GTEST=1 -DOPENSOURCE_ONLY=1
 
+# Force ctest to run even when DEB_BUILD_OPTIONS=nocheck is set. The fork
+# does not ship through Debian autobuilders, so honouring the standard
+# nocheck escape hatch isn't useful here — we'd rather catch a failing
+# test than ship a broken .deb. To skip the suite entirely, reconfigure
+# the cmake project with -DPHD_BUILD_TESTS=OFF.
+#
+# We invoke ctest directly instead of dh_auto_test because dh_auto_test
+# itself respects nocheck and short-circuits before running anything.
+#
+# Build-dir resolution is deterministic-first: try the canonical
+# obj-$(DEB_HOST_GNU_TYPE) (what dh_auto_configure creates by default), and
+# only fall back to a sorted glob if that's missing. The glob is sorted so
+# multiple obj-*-linux-* dirs (e.g. residue from a prior cross-build) pick
+# the same one across runs instead of relying on filesystem ordering.
+override_dh_auto_test:
+	@build_dir="obj-$(DEB_HOST_GNU_TYPE)"; \
+	if [ ! -d "$$build_dir" ]; then \
+		build_dir=$$(find . -maxdepth 1 -type d -name 'obj-*-linux-*' | sort | head -1); \
+	fi; \
+	if [ -z "$$build_dir" ] || [ ! -f "$$build_dir/CTestTestfile.cmake" ]; then \
+		echo "ERROR: cmake build dir with CTestTestfile.cmake not found (tried obj-$(DEB_HOST_GNU_TYPE) and obj-*-linux-* glob)" >&2; \
+		exit 1; \
+	fi; \
+	echo "Running ctest in $$build_dir"; \
+	cd "$$build_dir" && ctest --output-on-failure
+
+# Force the install destdir to debian/openastro-phd2/. With a single binary
+# package in debian/control, dh_auto_install would do this automatically;
+# the transitional phd2-alpaca stanza (Architecture: all, no files) makes
+# debhelper switch to the multi-package default of debian/tmp/ and then
+# distribute via .install files, which would break the path-specific
+# overrides below. The transitional package owns no files anyway, so
+# pinning the destdir keeps the existing layout.
 override_dh_auto_install:
-	dh_auto_install
-	# Rename the wrapper and binary from 'phd2' to 'phd2-alpaca'
+	dh_auto_install --destdir=$(CURDIR)/debian/openastro-phd2
+	# Rename the wrapper and binary from 'phd2' to 'openastro-phd2'
 	# The wrapper script (phd2) uses exec "$0.bin" so both must match.
-	if [ -f $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 ]; then \
-		mv $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2 \
-		   $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2-alpaca; \
+	if [ -f $(CURDIR)/debian/openastro-phd2/usr/bin/phd2 ]; then \
+		mv $(CURDIR)/debian/openastro-phd2/usr/bin/phd2 \
+		   $(CURDIR)/debian/openastro-phd2/usr/bin/openastro-phd2; \
 	fi
-	if [ -f $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2.bin ]; then \
-		mv $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2.bin \
-		   $(CURDIR)/debian/phd2-alpaca/usr/bin/phd2-alpaca.bin; \
+	if [ -f $(CURDIR)/debian/openastro-phd2/usr/bin/phd2.bin ]; then \
+		mv $(CURDIR)/debian/openastro-phd2/usr/bin/phd2.bin \
+		   $(CURDIR)/debian/openastro-phd2/usr/bin/openastro-phd2.bin; \
 	fi
 	# Bundle INDI 2.x runtime libs (built from source in the Docker image;
 	# Debian trixie only ships 1.9.9 which is too old).
 	if ls /usr/local/lib/libindi*.so* >/dev/null 2>&1; then \
-		mkdir -p $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca; \
+		mkdir -p $(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2; \
 		find /usr/local/lib -name 'libindi*.so*' ! -type d \
-			-exec cp -P {} $(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca/ \;; \
+			-exec cp -P {} $(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2/ \;; \
 	fi
 
 # Tell dh_shlibdeps where to find bundled libraries (INDI 2.x + any future
 # proprietary camera libs when OPENSOURCE_ONLY=0).
 # --ignore-missing-info suppresses errors for libs not owned by any .deb package.
 override_dh_shlibdeps:
-	dh_shlibdeps -l$(CURDIR)/debian/phd2-alpaca/usr/lib/phd2-alpaca \
+	dh_shlibdeps -l$(CURDIR)/debian/openastro-phd2/usr/lib/openastro-phd2 \
 		--dpkg-shlibdeps-params=--ignore-missing-info
 
 # dwz can fail on large C++ binaries — skip it

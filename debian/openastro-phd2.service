@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenAstro PHD2 Headless Guiding Server
+Documentation=https://github.com/open-astro/phd2-alpaca-indi
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openastro-phd2
+Group=openastro-phd2
+WorkingDirectory=/var/lib/openastro-phd2
+Environment=LD_LIBRARY_PATH=/usr/lib/openastro-phd2
+ExecStart=/usr/bin/xvfb-run -a /usr/bin/openastro-phd2 --headless --headless-auto-connect
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

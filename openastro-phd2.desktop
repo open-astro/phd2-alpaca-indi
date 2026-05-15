@@ -2,10 +2,10 @@
 Version=1.0
 Encoding=UTF-8
 Name=OpenAstro PHD2
-Comment=PHD Guiding, auto-guiding of your telescope (Alpaca support)
-Exec=phd2
-StartupWMClass=phd2.bin
-Icon=phd2
+Comment=PHD Guiding, auto-guiding of your telescope (Alpaca / INDI support)
+Exec=openastro-phd2
+StartupWMClass=openastro-phd2.bin
+Icon=openastro-phd2
 Terminal=false
 Type=Application
 Categories=Education;Science;Astronomy;

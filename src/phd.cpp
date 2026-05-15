@@ -508,6 +508,31 @@ bool PhdApp::OnInit()
     wxStandardPaths::Get().DontIgnoreAppSubDir();
 #endif
 
+    // Vendor + app name determine wxConfig + wxStandardPaths locations and the
+    // wxSingleInstanceChecker lock name below. Pre-2.0.0 this fork wrote to
+    // upstream PHD2's location (StarkLabs / PHD2|phd2), which meant running
+    // both apps shared settings (and Inno Setup's uninsdeletekey on the
+    // StarkLabs key would wipe upstream's HKCU on uninstall). 2.0.0 moves to
+    // an OpenAstro-specific namespace; PhdConfig's constructor handles the
+    // one-time migration from the legacy location.
+    //
+    // These must be set BEFORE the wxSingleInstanceChecker construction below:
+    // GetAppName() falls back to the executable basename if SetAppName hasn't
+    // been called yet. On Windows the .exe filename is still phd2.exe (it
+    // gets relocated into OpenAstroPHD2\ at install time, but the file itself
+    // keeps the short name), so the basename collides with upstream PHD2's
+    // phd2.exe and both apps end up taking the lock named "phd2.1" — the
+    // second one to launch hits "PHD2 instance 1 is already running".
+    SetVendorName(_T("OpenAstro"));
+    // use SetAppName() to ensure the local data directory is found even if the name of the executable is changed
+#ifdef __APPLE__
+    SetAppName(_T("OpenAstroPHD2"));
+#elif defined(__WINDOWS__)
+    SetAppName(_T("OpenAstroPHD2"));
+#else
+    SetAppName(_T("openastro-phd2"));
+#endif
+
     m_instanceChecker = new wxSingleInstanceChecker(wxString::Format("%s.%ld", GetAppName(), m_instanceNumber));
     if (m_instanceChecker->IsAnotherRunning())
     {
@@ -523,14 +548,6 @@ bool PhdApp::OnInit()
 # if (wxMAJOR_VERSION > 2 || wxMINOR_VERSION > 8)
     wxDisableAsserts();
 # endif
-#endif
-
-    SetVendorName(_T("StarkLabs"));
-    // use SetAppName() to ensure the local data directory is found even if the name of the executable is changed
-#ifdef __APPLE__
-    SetAppName(_T("PHD2"));
-#else
-    SetAppName(_T("phd2"));
 #endif
     pConfig = new PhdConfig(m_instanceNumber);
 

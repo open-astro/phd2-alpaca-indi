@@ -155,6 +155,19 @@ generate_doc_targets(
 # PEC Guider, Max Planck Institute for Intelligent Systems, Tuebingen, Germany.
 add_subdirectory(contributions/MPI_IS_gaussian_process tmp_gaussian_process)
 
+# Unit tests (uses GTest fetched in thirdparty.cmake). Added BEFORE the
+# global include_directories(${phd_src_dir}) below so test targets don't
+# inherit src/ on their include path; tests/include/phd.h must shadow the
+# real one for header substitution to work.
+#
+# PHD_BUILD_TESTS defaults ON so packaging scripts (build-deb.sh,
+# build-dmg.sh, build-exe.ps1) pick the suite up automatically. Pass
+# -DPHD_BUILD_TESTS=OFF to skip building the test binaries.
+option(PHD_BUILD_TESTS "Build PHD2 unit tests" ON)
+if(PHD_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
+
 
 
 #################################################################################
@@ -510,7 +523,14 @@ if(APPLE)
     phd2
     PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${PHD_PROJECT_ROOT_DIR}/Info.plist.in
-    OUTPUT_NAME PHD2  # upper case on macOS
+    # OUTPUT_NAME on a MACOSX_BUNDLE target sets BOTH the .app filename and the
+    # binary inside Contents/MacOS/. We want users to see "OpenAstro PHD2" in
+    # /Applications instead of "PHD2" (which collides on disk with upstream
+    # PHD2.app if both are installed and looks wrong next to our other
+    # OpenAstro-branded artifacts). The bundle binary becomes
+    # `OpenAstro PHD2.app/Contents/MacOS/OpenAstro PHD2`; run_phd2_macos is
+    # the actual CFBundleExecutable (see Info.plist.in) and execs that binary.
+    OUTPUT_NAME "OpenAstro PHD2"
   )
   target_include_directories(
     phd2
@@ -534,7 +554,7 @@ if(APPLE)
   # cameras come over Alpaca/INDI; no direct USB access from PHD2).
   #
   # Homebrew dylib bundling (cfitsio, wxWidgets, image libs, etc.) into
-  # PHD2.app/Contents/Frameworks/ happens in build-dmg.sh at packaging
+  # "OpenAstro PHD2.app"/Contents/Frameworks/ happens in build-dmg.sh at packaging
   # time, not here — dev incremental builds run faster against Homebrew
   # dylibs in place, and only the redistributable .dmg needs the rewrite.
 

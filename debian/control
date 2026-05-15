@@ -1,4 +1,4 @@
-Source: phd2-alpaca
+Source: openastro-phd2
 Section: science
 Priority: optional
 Maintainer: OpenAstro <support@openastro.net>
@@ -16,13 +16,15 @@ Build-Depends: debhelper-compat (= 13),
 Standards-Version: 4.6.2
 Homepage: https://github.com/open-astro/phd2-alpaca-indi
 
-Package: phd2-alpaca
+Package: openastro-phd2
 Architecture: any
+Conflicts: phd2-alpaca
+Replaces: phd2-alpaca
 Depends: ${shlibs:Depends}, ${misc:Depends},
          adduser,
          xvfb
 Suggests: indi-bin
-Description: PHD2 auto-guiding with ASCOM Alpaca and INDI support
+Description: OpenAstro PHD2 auto-guiding with ASCOM Alpaca and INDI support
  PHD2 is a telescope auto-guiding application designed to be easy to use
  while providing powerful, intelligent guiding. Connect your mount, your
  camera, select a star, and start guiding.
@@ -30,5 +32,21 @@ Description: PHD2 auto-guiding with ASCOM Alpaca and INDI support
  This build includes integrated ASCOM Alpaca and INDI support for controlling
  cameras, mounts, and rotators over the local network.
  .
- Runs headlessly as the phd2-alpaca system user via systemd, exposing the
+ Runs headlessly as the openastro-phd2 system user via systemd, exposing the
  PHD2 JSON-RPC API for remote control by planetarium and capture software.
+
+Package: phd2-alpaca
+Architecture: all
+Section: oldlibs
+Priority: optional
+Depends: openastro-phd2 (= ${binary:Version}), ${misc:Depends}
+Description: transitional package - renamed to openastro-phd2
+ OpenAstro PHD2 2.0.0 renamed the binary Debian package from phd2-alpaca
+ to openastro-phd2 so it matches the macOS bundle identifier
+ (net.openastro.phd2) and the Windows installer's OpenAstro branding.
+ .
+ This is an empty transitional metadata package that depends on
+ openastro-phd2. It exists so that apt-managed upgrades from a host
+ that had phd2-alpaca installed pull in openastro-phd2 automatically.
+ Once the upgrade completes you can safely remove this package with
+ `sudo apt remove phd2-alpaca` - no service or files are owned by it.

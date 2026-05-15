@@ -111,19 +111,29 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Run tests (optional, but good practice)
+# Run tests. A test failure aborts the installer build - matches the
+# build-deb.sh (dh_auto_test) and build-dmg.sh (set -e + ctest) gates.
+# CTest is shipped with CMake so it should always be on PATH; the absolute-
+# path fallback covers a CMake install that didn't update PATH.
 Write-Host "Running tests..." -ForegroundColor Yellow
-$ctestPath = Get-Command ctest -ErrorAction SilentlyContinue
-if (-not $ctestPath) {
+# Get-Command returns a CommandInfo on success, not a path string. Pull
+# .Source so subsequent Test-Path / display interpolation see a real path
+# instead of just "ctest.exe".
+$ctestCmd = Get-Command ctest -ErrorAction SilentlyContinue
+if ($ctestCmd) {
+    $ctestPath = $ctestCmd.Source
+} else {
     $ctestPath = "C:\Program Files\CMake\bin\ctest.exe"
 }
 if (Test-Path $ctestPath) {
-    & $ctestPath --build-config Release
+    & $ctestPath --build-config Release --output-on-failure
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Some tests failed, but continuing with installer creation..."
+        Write-Error "Tests failed - aborting installer build. Fix the failing tests, or reconfigure with -DPHD_BUILD_TESTS=OFF to drop the test build entirely."
+        exit 1
     }
 } else {
-    Write-Warning "CTest not found, skipping tests"
+    Write-Error "CTest not found at '$ctestPath' and not on PATH. Cannot verify build."
+    exit 1
 }
 
 # Generate installer script from template
@@ -148,9 +158,13 @@ if (Test-Path $readmeTemplate) {
     [System.IO.File]::WriteAllText($readmeOutput, $readmeContent, $utf8NoBom)
 }
 
-# Create installer
+# Create installer. Output filename uses the openastro-phd2-<version>-<arch>
+# convention shared with the macOS .dmg and Linux .deb produced by the
+# sibling build scripts. Inno Setup's OutputBaseFilename default in
+# phd2.iss.in is overridden via the /F flag here.
 Write-Host "Creating installer..." -ForegroundColor Yellow
-$installerName = "phd2$InstallerArch-v$fullVersion-installer"
+$archSuffix = $InstallerArch.TrimStart("-")  # "-x64" -> "x64"
+$installerName = "openastro-phd2-$fullVersion-$archSuffix"
 & $isccPath $issOutput "/F$installerName"
 
 if ($LASTEXITCODE -ne 0) {

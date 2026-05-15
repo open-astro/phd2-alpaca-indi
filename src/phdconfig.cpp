@@ -231,12 +231,124 @@ std::vector<wxString> ConfigSection::GetGroupNames(const wxString& baseName)
 
 static wxString ConfigName(int instance)
 {
+    wxString configName = _T("OpenAstroPHD2");
+    if (instance > 1)
+    {
+        configName += wxString::Format("-instance%d", instance);
+    }
+    return configName;
+}
+
+// Legacy (pre-2.0.0) wxConfig path. Pre-2.0.0 OpenAstro PHD2 (and upstream
+// PHD2) wrote to vendor=StarkLabs, wxConfig name=PHDGuidingV2. 2.0.0 moved
+// to vendor=OpenAstro, wxConfig name=OpenAstroPHD2 so we no longer share a
+// store with upstream. This helper builds the path a pre-2.0.0 install
+// would have used so the constructor can copy data out of it on first
+// launch.
+static wxString LegacyConfigName(int instance)
+{
     wxString configName = _T("PHDGuidingV2");
     if (instance > 1)
     {
         configName += wxString::Format("-instance%d", instance);
     }
     return configName;
+}
+
+// Copy one wxConfigBase entry from src to dst at identical paths. Mirrors
+// the in-config CopyVal() below but takes two configs instead of one.
+static void CopyEntryAcross(wxConfigBase *src, wxConfigBase *dst, const wxString& path)
+{
+    switch (src->GetEntryType(path))
+    {
+    case wxConfigBase::Type_String:
+    {
+        wxString v;
+        src->Read(path, &v);
+        dst->Write(path, v);
+        break;
+    }
+    case wxConfigBase::Type_Boolean:
+    {
+        bool v;
+        src->Read(path, &v);
+        dst->Write(path, v);
+        break;
+    }
+    case wxConfigBase::Type_Integer:
+    {
+        long v;
+        src->Read(path, &v);
+        dst->Write(path, v);
+        break;
+    }
+    case wxConfigBase::Type_Float:
+    {
+        double v;
+        src->Read(path, &v);
+        dst->Write(path, v);
+        break;
+    }
+    case wxConfigBase::Type_Unknown:
+        break;
+    }
+}
+
+// Recursively copy every group + entry from src to dst at identical paths.
+// Called for the 2.0.0 namespace migration only; src is read-only.
+static void CopyTreeAcross(wxConfigBase *src, wxConfigBase *dst, const wxString& srcGroup)
+{
+    wxString name;
+    long cookie;
+
+    // Save src path so callers can resume traversal after recursion.
+    wxString savedSrcPath = src->GetPath();
+    src->SetPath(srcGroup);
+
+    bool more = src->GetFirstGroup(name, cookie);
+    while (more)
+    {
+        CopyTreeAcross(src, dst, srcGroup + "/" + name);
+        more = src->GetNextGroup(name, cookie);
+    }
+
+    more = src->GetFirstEntry(name, cookie);
+    while (more)
+    {
+        CopyEntryAcross(src, dst, srcGroup + "/" + name);
+        more = src->GetNextEntry(name, cookie);
+    }
+
+    src->SetPath(savedSrcPath);
+}
+
+// One-shot migration from the legacy StarkLabs/PHDGuidingV2 wxConfig location
+// to the new OpenAstro/OpenAstroPHD2 location. Runs only when the new store
+// is empty (ConfigVersion absent). Never deletes the legacy store, so
+// upstream PHD2 keeps its own settings intact if it's also installed.
+// Returns true if anything was copied.
+static bool MigrateLegacyConfig(int instance, wxConfigBase *dst)
+{
+    // Override wxApp-level Vendor/AppName via the wxConfig constructor so we
+    // open a wxConfig at the pre-2.0.0 location independent of what
+    // PhdApp::OnInit() set globally. Empty file args mean wxFileConfig (Unix)
+    // uses its default `~/.<appName>` path, and wxRegConfig (Windows) uses
+    // `HKCU\Software\<vendor>\<appName>`.
+    wxConfig legacy(LegacyConfigName(instance), _T("StarkLabs"), wxEmptyString, wxEmptyString,
+                    wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_GLOBAL_FILE);
+
+    long legacyVersion = 0;
+    legacy.Read("/ConfigVersion", &legacyVersion, 0L);
+    if (legacyVersion == 0)
+        return false; // legacy store empty or absent — nothing to migrate
+
+    Debug.Write(wxString::Format("Migrating wxConfig from legacy StarkLabs/PHDGuidingV2 store "
+                                 "(ConfigVersion=%ld) to OpenAstro/OpenAstroPHD2\n",
+                                 legacyVersion));
+
+    CopyTreeAcross(&legacy, dst, _T(""));
+    dst->Flush();
+    return true;
 }
 
 PhdConfig::PhdConfig(int instance)
@@ -247,6 +359,18 @@ PhdConfig::PhdConfig(int instance)
     m_isNewInstance = false;
 
     m_configVersion = Global.GetLong("ConfigVersion", 0);
+    if (m_configVersion == 0)
+    {
+        // No data in the new (2.0.0+) location. Try migrating from the
+        // pre-2.0.0 StarkLabs/PHDGuidingV2 store before declaring this a
+        // fresh install. The migration only writes to the new config when
+        // the legacy store has real data, so a first-time user on a clean
+        // machine still falls through to the "new instance" branch below.
+        bool migrated = MigrateLegacyConfig(instance, config);
+        if (migrated)
+            m_configVersion = Global.GetLong("ConfigVersion", 0);
+    }
+
     if (m_configVersion == 0)
     {
         m_isNewInstance = true;

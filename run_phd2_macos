@@ -5,4 +5,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 # disable AppNap
 /usr/bin/defaults write net.openastro.phd2 NSAppSleepDisabled -bool YES
 
-exec "$HERE"/PHD2
+# The wxWidgets binary lives next to this wrapper inside Contents/MacOS/.
+# Its name matches the CMake OUTPUT_NAME, which 2.0.0 changed from PHD2 to
+# "OpenAstro PHD2" so /Applications shows the OpenAstro brand and the .app
+# no longer collides on disk with upstream PHD2.app.
+exec "$HERE/OpenAstro PHD2"

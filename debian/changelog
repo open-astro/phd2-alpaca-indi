@@ -1,3 +1,15 @@
+openastro-phd2 (2.0.0) UNRELEASED; urgency=low
+
+  * Rename Debian source/binary package phd2-alpaca -> openastro-phd2 to match
+    the macOS bundle identifier (net.openastro.phd2) and Windows installer
+    branding. Existing installs of phd2-alpaca must be `apt remove`d before
+    installing this package; Conflicts/Replaces metadata covers the dpkg path.
+  * System user, group, install paths, and systemd unit all renamed accordingly
+    (/var/lib/phd2-alpaca -> /var/lib/openastro-phd2, etc.).
+  * See CHANGELOG.md for the full 2.0.0 release notes.
+
+ -- Joey Troy <joey.troy@gmail.com>  Fri, 15 May 2026 12:00:00 -0600
+
 phd2-alpaca (1.3.0) UNRELEASED; urgency=low
 
   * Re-add INDI camera, mount, and rotator support on all platforms.

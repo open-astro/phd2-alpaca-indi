@@ -5,10 +5,10 @@
 # and pre-Tahoe macOS are not supported by this fork.
 #
 # Builds PHD2 and produces:
-#   PHD2-<version>-macOS-arm64.dmg
+#   openastro-phd2-<version>-arm64.dmg
 #
 # All Homebrew dylibs that PHD2 links against (wxWidgets, cfitsio, libnova
-# transitive image libs, etc.) are copied into PHD2.app/Contents/Frameworks/
+# transitive image libs, etc.) are copied into "OpenAstro PHD2.app"/Contents/Frameworks/
 # and their install names rewritten via install_name_tool, so the DMG runs on
 # end-user machines without Homebrew installed.
 
@@ -101,7 +101,7 @@ read_version() {
 # ---------------------------------------------------------------------------
 # is_external_dylib path
 #   Returns 0 if the given path is a Homebrew/MacPorts/local dylib that needs
-#   to be bundled into PHD2.app, 1 if it's a system dylib (/usr/lib, /System)
+#   to be bundled into the .app, 1 if it's a system dylib (/usr/lib, /System)
 #   or already-bundled (@executable_path/...).
 # ---------------------------------------------------------------------------
 is_external_dylib() {
@@ -281,25 +281,22 @@ $bad"
 INSTALL_DEPS=false
 CLEAN=false
 FORCE=false
-SKIP_TESTS=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --install-deps) INSTALL_DEPS=true ;;
         --clean)        CLEAN=true ;;
         --force)        FORCE=true ;;
-        --skip-tests)   SKIP_TESTS=true ;;
         -h|--help)
             cat <<EOF
 Usage: $0 [OPTIONS]
 
 Build PHD2 and create a .dmg disk image for macOS arm64.
-Result: PHD2-<version>-macOS-arm64.dmg in tmp/
+Result: openastro-phd2-<version>-arm64.dmg in tmp/
 
 Options:
   --install-deps   Install Homebrew build dependencies, then exit.
   --clean          Remove tmp/ before building.
-  --skip-tests     Skip the ctest suite after building.
   --force          Skip the build-dependency check entirely.
   -h, --help       Show this help.
 EOF
@@ -326,7 +323,7 @@ fi
 
 read_version
 info "Detected version: ${FULL_VERSION}"
-DMG_NAME="PHD2-${FULL_VERSION}-macOS-arm64.dmg"
+DMG_NAME="openastro-phd2-${FULL_VERSION}-arm64.dmg"
 
 # ---------------------------------------------------------------------------
 # Clean if requested
@@ -367,34 +364,39 @@ make -j"$cores" indi
 step "Building PHD2 (parallel x$cores)..."
 make -j"$cores"
 
+# The 2.0.0 rebrand renamed the CMake OUTPUT_NAME to "OpenAstro PHD2" so the
+# .app file in /Applications no longer collides on disk with upstream PHD2's
+# bundle. Capture the name once here; the rest of the script and the
+# AppleScript heredoc below reference it via this variable so the spaces are
+# quoted consistently.
+APP_BUNDLE="OpenAstro PHD2.app"
+
 # ---------------------------------------------------------------------------
-# Bundle Homebrew dylibs into PHD2.app/Contents/Frameworks/ so the .app
+# Bundle Homebrew dylibs into <APP_BUNDLE>/Contents/Frameworks/ so the .app
 # runs on machines without Homebrew. Recursive: walks transitive deps.
 # ---------------------------------------------------------------------------
-step "Bundling Homebrew dylibs into PHD2.app/Contents/Frameworks/..."
-bundle_app_dylibs PHD2.app
+step "Bundling Homebrew dylibs into ${APP_BUNDLE}/Contents/Frameworks/..."
+bundle_app_dylibs "$APP_BUNDLE"
 
 step "Checking library dependencies..."
-check_library_dependencies PHD2.app
+check_library_dependencies "$APP_BUNDLE"
 
 # ---------------------------------------------------------------------------
-# Tests
+# Tests — always run; no skip flag. A test failure aborts the .dmg build
+# (set -e is on at the top of the script). To skip the suite entirely,
+# reconfigure with -DPHD_BUILD_TESTS=OFF.
 # ---------------------------------------------------------------------------
-if "$SKIP_TESTS"; then
-    warn "Skipping ctest (--skip-tests)."
-else
-    step "Running ctest..."
-    ctest --output-on-failure
-fi
+step "Running ctest..."
+ctest --output-on-failure
 
 # ---------------------------------------------------------------------------
-# DMG creation — "drag PHD2 to Applications" install window.
+# DMG creation — "drag OpenAstro PHD2 to Applications" install window.
 #
 # Three-step process:
-#   1. Build a writable scratch DMG (UDRW) seeded with PHD2.app.
+#   1. Build a writable scratch DMG (UDRW) seeded with the .app bundle.
 #   2. Mount it, add the /Applications symlink and .background/ image, then
 #      drive Finder via AppleScript to set the icon view: 640×360 window,
-#      icon size 128, our PNG as background, PHD2.app on the left and the
+#      icon size 128, our PNG as background, the .app on the left and the
 #      Applications shortcut on the right.
 #   3. Detach and convert to a compressed read-only UDZO for shipping.
 #
@@ -409,7 +411,10 @@ BG_IMG="${ROOT_DIR}/packaging/macos/background.png"
 [[ -f "$BG_IMG" ]] || err "Missing DMG background image: $BG_IMG"
 
 STAGING_DMG="phd2-staging-$$.dmg"
-VOLNAME="PHD2"
+# Volume label users see when the DMG is mounted (Finder sidebar, /Volumes/...).
+# Pre-2.0.0 was just "PHD2" which was inconsistent with the rebranded .app
+# inside; now matches the bundle's display name.
+VOLNAME="OpenAstro PHD2"
 MOUNTPOINT="/Volumes/${VOLNAME}"
 
 rm -f "$DMG_NAME" "$STAGING_DMG"
@@ -418,13 +423,13 @@ if [[ -d "$MOUNTPOINT" ]]; then
     hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1 || true
 fi
 
-# Size the writable DMG to fit PHD2.app + ~20 MB headroom for the symlink,
+# Size the writable DMG to fit the .app + ~20 MB headroom for the symlink,
 # background image, and HFS+ metadata.
-APP_KB=$(du -sk PHD2.app | awk '{print $1}')
+APP_KB=$(du -sk "$APP_BUNDLE" | awk '{print $1}')
 DMG_KB=$(( APP_KB + 20480 ))
 
 hdiutil create \
-    -srcfolder PHD2.app \
+    -srcfolder "$APP_BUNDLE" \
     -volname "$VOLNAME" \
     -fs HFS+ \
     -fsargs "-c c=64,a=16,e=16" \
@@ -439,6 +444,16 @@ DEVICE=$(awk '/Apple_HFS/ {print $1; exit}' "$ATTACH_LOG")
 rm -f "$ATTACH_LOG"
 [[ -n "$DEVICE" ]] || err "Could not determine device node for mounted staging DMG."
 
+# hdiutil attach returns once the kernel mount is up, but Finder learns about
+# the volume asynchronously via diskarbitrationd. On Tahoe the race is tight
+# enough that the AppleScript below raises -1728 ("Can't get disk PHD2")
+# without this settle. Poll for the mountpoint to be readable from userspace
+# before talking to Finder.
+for _ in 1 2 3 4 5; do
+    [[ -d "$MOUNTPOINT" ]] && break
+    sleep 1
+done
+
 ln -s /Applications "${MOUNTPOINT}/Applications"
 mkdir -p "${MOUNTPOINT}/.background"
 cp "$BG_IMG" "${MOUNTPOINT}/.background/background.png"
@@ -451,8 +466,15 @@ cp "$BG_IMG" "${MOUNTPOINT}/.background/background.png"
 # bottom strip of the image it would otherwise clip.
 # Icon positions are in content-area coords (0,0 = top-left of the
 # content area, below the title bar).
+#
+# Note: backticks in this heredoc would be evaluated by bash as command
+# substitution (`text color` previously produced "text: command not found").
+# Keep comments backtick-free.
 osascript <<APPLESCRIPT
 tell application "Finder"
+    -- Give Finder another beat to register the freshly attached disk so
+    -- the "tell disk" below resolves cleanly on Tahoe.
+    delay 1
     tell disk "${VOLNAME}"
         open
         set current view of container window to icon view
@@ -464,16 +486,16 @@ tell application "Finder"
         set icon size of viewOptions to 128
         -- Standard 12pt label size. We'd rather force white text so labels
         -- read cleanly on the dark navy band, but macOS Tahoe's Finder
-        -- dropped `text color` on icon view options (raises -1728) and
-        -- there's no AppleScript path that still works. The try/end try
-        -- keeps the script working if Apple ever restores the property on
-        -- a future macOS.
+        -- dropped the "text color" property on icon view options (raises
+        -- -1728) and there's no AppleScript path that still works. The
+        -- try/end try keeps the script working if Apple ever restores
+        -- the property on a future macOS.
         set text size of viewOptions to 12
         try
             set text color of viewOptions to {65535, 65535, 65535}
         end try
         set background picture of viewOptions to file ".background:background.png"
-        set position of item "PHD2.app" of container window to {175, 450}
+        set position of item "${APP_BUNDLE}" of container window to {175, 450}
         set position of item "Applications" of container window to {525, 450}
         update without registering applications
         delay 2
@@ -499,4 +521,4 @@ echo -e "  ${CYAN}${DMG_PATH}${NC}"
 ls -la "$DMG_PATH"
 echo ""
 echo "Mount with: open '$DMG_PATH'"
-echo "Drag PHD2.app to /Applications to install."
+echo "Drag '${APP_BUNDLE}' to /Applications to install."
