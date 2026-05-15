@@ -3,7 +3,14 @@ set -e
 
 case "$1" in
     purge)
-        # Remove the system user created during install
+        # Remove the package state directory created in postinst (calibration,
+        # profiles, logs). Debian policy: purge must delete all package state,
+        # otherwise `apt purge openastro-phd2` leaves orphaned data behind.
+        if [ -d /var/lib/openastro-phd2 ]; then
+            rm -rf /var/lib/openastro-phd2
+        fi
+
+        # Remove the system user/group created during install
         if getent passwd openastro-phd2 > /dev/null 2>&1; then
             deluser --system openastro-phd2 || true
         fi
