@@ -63,8 +63,15 @@ override_dh_auto_test:
 	echo "Running ctest in $$build_dir"; \
 	cd "$$build_dir" && ctest --output-on-failure
 
+# Force the install destdir to debian/openastro-phd2/. With a single binary
+# package in debian/control, dh_auto_install would do this automatically;
+# the transitional phd2-alpaca stanza (Architecture: all, no files) makes
+# debhelper switch to the multi-package default of debian/tmp/ and then
+# distribute via .install files, which would break the path-specific
+# overrides below. The transitional package owns no files anyway, so
+# pinning the destdir keeps the existing layout.
 override_dh_auto_install:
-	dh_auto_install
+	dh_auto_install --destdir=$(CURDIR)/debian/openastro-phd2
 	# Rename the wrapper and binary from 'phd2' to 'openastro-phd2'
 	# The wrapper script (phd2) uses exec "$0.bin" so both must match.
 	if [ -f $(CURDIR)/debian/openastro-phd2/usr/bin/phd2 ]; then \

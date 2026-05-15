@@ -21,7 +21,7 @@ First native macOS Apple Silicon build, a new unit test suite that hard-gates ev
 | **macOS floor: 26 Tahoe** | Was 10.14. Sonoma / Sequoia users stay on 1.3.0. |
 | **macOS bundle ID changed** | `org.openphdguiding.phd2` → `net.openastro.phd2`. Existing macOS-specific preferences (e.g. window positions cached by AppKit) don't auto-migrate; to keep them: `cp ~/Library/Preferences/org.openphdguiding.phd2.plist ~/Library/Preferences/net.openastro.phd2.plist`. (Profile / equipment settings auto-migrate via the wxConfig namespace move below — this row only matters if you've heavily customized macOS-native prefs.) |
 | **wxConfig namespace moved to OpenAstro** | Previously OpenAstro PHD2 shared settings storage with upstream PHD2 (`Software\StarkLabs\PHDGuidingV2` on Windows, `~/.PHDGuidingV2` on Linux/macOS). 2.0.0 moves to `Software\OpenAstro\OpenAstroPHD2` / `~/.OpenAstroPHD2` so both apps can be installed side-by-side without stepping on each other (and so uninstalling OpenAstro PHD2 no longer wipes upstream's HKCU key). **Existing OpenAstro PHD2 1.3.0 profiles, calibration, and equipment settings auto-migrate on first 2.0.0 launch** — the legacy store is read-only during migration, so upstream PHD2's settings (if also installed) are preserved. Dark library (`Documents/PHD2`) and defect maps are not migrated automatically; re-point via Manage Dark Library if needed. |
-| **Linux package renamed `phd2-alpaca` → `openastro-phd2`** | `sudo apt remove phd2-alpaca` first, then install the new `openastro-phd2-2.0.0-<arch>.deb`. System user, install paths, and systemd unit also renamed. `Conflicts`/`Replaces` metadata blocks side-by-side installs. |
+| **Linux package renamed `phd2-alpaca` → `openastro-phd2`** | Fresh install: `sudo dpkg -i openastro-phd2-2.0.0-<arch>.deb`. apt-managed upgrade from an existing `phd2-alpaca` install: `sudo apt install ./openastro-phd2-2.0.0-<arch>.deb ./phd2-alpaca-2.0.0-all.deb` — the transitional metadata package depends on the new one and lets apt retire the old name automatically (no manual `apt remove` needed). System user, install paths, and systemd unit also renamed. `Conflicts`/`Replaces` metadata blocks side-by-side installs of the real binaries. |
 | **32-bit Windows removed** | x64 only. `-A Win32` is rejected at configure time. |
 | **Legacy macOS guide drivers removed** | `GUIDE_GPUSB`, `GUIDE_GCUSBST4`, `GUIDE_EQUINOX`, `GUIDE_EQMAC` — none worked on modern macOS anyway. Use Alpaca/INDI guide outputs. |
 | **`libusb` + `openssag` removed** | Unreachable since 1.2.0; no functional impact. |
@@ -74,10 +74,13 @@ All three artifacts follow the unified `openastro-phd2-<version>-<arch>.<ext>` n
 
 **Linux (Debian/Pi Trixie):**
 ```bash
-# If you have the old phd2-alpaca package installed, remove it first:
-sudo apt remove phd2-alpaca
+# Fresh install (no existing phd2-alpaca):
 sudo dpkg -i openastro-phd2-2.0.0-amd64.deb    # or -arm64.deb
 sudo apt-get install -f
+
+# OR, apt-managed upgrade from an existing phd2-alpaca install
+# (no manual `apt remove` needed; transitional package handles it):
+sudo apt install ./openastro-phd2-2.0.0-amd64.deb ./phd2-alpaca-2.0.0-all.deb
 ```
 
 **macOS (Tahoe, Apple Silicon):** Open `openastro-phd2-2.0.0-arm64.dmg`, drag to Applications. First launch: right-click → Open.

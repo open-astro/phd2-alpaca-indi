@@ -266,27 +266,49 @@ fi
 # Report result and rename to the user-facing convention
 # ---------------------------------------------------------------------------
 PARENT_DIR="$(dirname "$ROOT_DIR")"
-# Filename mirrors the Source: name in debian/control (openastro-phd2). dpkg
-# emits `<source>_<version>_<arch>.deb` (underscores); we rename to the
-# user-facing `openastro-phd2-<version>-<arch>.deb` (hyphens) convention
-# that matches the macOS .dmg and Windows .exe naming. Pin to
-# FULL_VERSION + HOST_ARCH so a stale .deb from a previous version (or a
-# different arch) sitting in PARENT_DIR doesn't get reported as this run's
-# output. Exclude the dbgsym sibling so we point the user at the installable .deb.
+# Filenames mirror the Package: names in debian/control:
+#   openastro-phd2  - the real binary package (architecture-specific)
+#   phd2-alpaca     - an Architecture: all transitional metadata package that
+#                     depends on openastro-phd2, included so apt-managed
+#                     upgrades from the old phd2-alpaca name pull in the new
+#                     package automatically.
+# dpkg emits `<package>_<version>_<arch>.deb` (underscores); we rename to the
+# user-facing `<package>-<version>-<arch>.deb` (hyphens) convention shared
+# with the macOS .dmg and Windows .exe. Pin to FULL_VERSION + HOST_ARCH for
+# the main package so a stale .deb from a previous version (or a different
+# arch) sitting in PARENT_DIR doesn't get reported as this run's output;
+# the transitional is Architecture: all so it's pinned on FULL_VERSION
+# only. Exclude the dbgsym sibling either way.
 DEB=$(find "$PARENT_DIR" -maxdepth 1 -name "openastro-phd2_${FULL_VERSION}_${HOST_ARCH}.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
+TRANSITIONAL=$(find "$PARENT_DIR" -maxdepth 1 -name "phd2-alpaca_${FULL_VERSION}_all.deb" ! -name "*-dbgsym_*" -type f 2>/dev/null | head -1)
 if [[ -n "$DEB" && -f "$DEB" ]]; then
     RENAMED="${PARENT_DIR}/openastro-phd2-${FULL_VERSION}-${HOST_ARCH}.deb"
     mv -f "$DEB" "$RENAMED"
     DEB="$RENAMED"
+    if [[ -n "$TRANSITIONAL" && -f "$TRANSITIONAL" ]]; then
+        RENAMED_T="${PARENT_DIR}/phd2-alpaca-${FULL_VERSION}-all.deb"
+        mv -f "$TRANSITIONAL" "$RENAMED_T"
+        TRANSITIONAL="$RENAMED_T"
+    fi
     echo ""
     echo -e "${GREEN}========================================${NC}"
     echo -e "${GREEN}.deb built successfully${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo -e "  ${CYAN}$DEB${NC}"
     ls -la "$DEB"
+    if [[ -n "$TRANSITIONAL" && -f "$TRANSITIONAL" ]]; then
+        echo -e "  ${CYAN}$TRANSITIONAL${NC} (transitional metadata package; optional)"
+        ls -la "$TRANSITIONAL"
+    fi
     echo ""
     echo "Install with: sudo dpkg -i $DEB"
     echo "  (resolve deps if needed: sudo apt-get install -f)"
+    if [[ -n "$TRANSITIONAL" && -f "$TRANSITIONAL" ]]; then
+        echo ""
+        echo "Optional: also install the transitional package so existing"
+        echo "phd2-alpaca users get auto-migrated through apt:"
+        echo "  sudo apt install ./$DEB ./$TRANSITIONAL"
+    fi
 else
     err ".deb not found in $PARENT_DIR (looked for openastro-phd2_${FULL_VERSION}_${HOST_ARCH}.deb)"
 fi

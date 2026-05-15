@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `debian/control` now ships a `phd2-alpaca` transitional metadata package alongside `openastro-phd2`. It is `Architecture: all`, owns no files, and depends on `openastro-phd2 (= ${binary:Version})`. Existing `phd2-alpaca` users who run an apt-managed upgrade now get pulled into `openastro-phd2` automatically without first having to `apt remove phd2-alpaca`; `build-deb.sh` produces a `phd2-alpaca-<version>-all.deb` next to the main `openastro-phd2-<version>-<arch>.deb`. CodeRabbit feedback on PR #12.
+
 ### Fixed
 - `debian/openastro-phd2.postrm` now removes `/var/lib/openastro-phd2` on package purge. The postinst creates this directory for runtime state (calibration, profiles, logs); Debian policy requires purge to delete all package state. Without this, `apt purge openastro-phd2` would leave the state dir orphaned on disk. CodeRabbit feedback on PR #12.
 
