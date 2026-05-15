@@ -111,19 +111,24 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Run tests. A test failure aborts the installer build — matches the
+# Run tests. A test failure aborts the installer build - matches the
 # build-deb.sh (dh_auto_test) and build-dmg.sh (set -e + ctest) gates.
 # CTest is shipped with CMake so it should always be on PATH; the absolute-
 # path fallback covers a CMake install that didn't update PATH.
 Write-Host "Running tests..." -ForegroundColor Yellow
-$ctestPath = Get-Command ctest -ErrorAction SilentlyContinue
-if (-not $ctestPath) {
+# Get-Command returns a CommandInfo on success, not a path string. Pull
+# .Source so subsequent Test-Path / display interpolation see a real path
+# instead of just "ctest.exe".
+$ctestCmd = Get-Command ctest -ErrorAction SilentlyContinue
+if ($ctestCmd) {
+    $ctestPath = $ctestCmd.Source
+} else {
     $ctestPath = "C:\Program Files\CMake\bin\ctest.exe"
 }
 if (Test-Path $ctestPath) {
     & $ctestPath --build-config Release --output-on-failure
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Tests failed — aborting installer build. Fix the failing tests, or reconfigure with -DPHD_BUILD_TESTS=OFF to drop the test build entirely."
+        Write-Error "Tests failed - aborting installer build. Fix the failing tests, or reconfigure with -DPHD_BUILD_TESTS=OFF to drop the test build entirely."
         exit 1
     }
 } else {

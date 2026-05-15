@@ -22,18 +22,21 @@ add_library(phd_test_common INTERFACE)
 target_link_libraries(phd_test_common INTERFACE GTest::gtest GTest::gtest_main)
 target_compile_features(phd_test_common INTERFACE cxx_std_20)
 
-# Quoted #includes (#include "phd.h") search the source file's own
-# directory first, which would find src/phd.h before our shadow. -iquote
-# inserts tests/include/ at the head of the quote search path, BEFORE the
-# source dir. -isystem on src/ avoids the same trap there.
 # C/C++ standard says #include "phd.h" finds the source file's own
-# directory first — so for json_parser.cpp in src/, the real src/phd.h
+# directory first - so for json_parser.cpp in src/, the real src/phd.h
 # always wins over our shadow no matter what -iquote does. Force-include
 # the shadow first so PHD_H_INCLUDED is already set when the production
 # source's #include "phd.h" line runs, making it a no-op.
-target_compile_options(phd_test_common INTERFACE
-  -include ${PHD_TESTS_INCLUDE}/phd.h
-)
+#
+# Force-include flag is compiler-specific: GCC/Clang use `-include FILE`,
+# MSVC uses `/FI FILE`. MSVC silently ignores `-include` with warning
+# D9002, so passing the wrong flag produces a confusing missing-header
+# error rather than a clear failure.
+if(MSVC)
+  target_compile_options(phd_test_common INTERFACE /FI${PHD_TESTS_INCLUDE}/phd.h)
+else()
+  target_compile_options(phd_test_common INTERFACE -include ${PHD_TESTS_INCLUDE}/phd.h)
+endif()
 target_include_directories(phd_test_common INTERFACE
   ${PHD_TESTS_INCLUDE}
   ${phd_src_dir}
