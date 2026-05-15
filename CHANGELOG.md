@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `debian/control` now ships a `phd2-alpaca` transitional metadata package alongside `openastro-phd2`. It is `Architecture: all`, owns no files, and depends on `openastro-phd2 (= ${binary:Version})`. Existing `phd2-alpaca` users who run an apt-managed upgrade now get pulled into `openastro-phd2` automatically without first having to `apt remove phd2-alpaca`; `build-deb.sh` produces a `phd2-alpaca-<version>-all.deb` next to the main `openastro-phd2-<version>-<arch>.deb`. CodeRabbit feedback on PR #12.
 
 ### Fixed
+- `build-dmg.sh` no longer fails on macOS Tahoe with `text: command not found` followed by `Finder got an error: Can't get disk "PHD2" (-1728)`. The first error was bash interpreting backticks in an AppleScript comment (`` `text color` ``) as command substitution inside the unquoted heredoc, replacing them with empty strings — noisy but non-fatal. The second was the real failure: `hdiutil attach` returns once the kernel mount lands, but Finder only learns about the volume asynchronously via diskarbitrationd, and on Tahoe the gap between mount and Finder-readiness is long enough that the immediately-following `tell disk "PHD2"` raised -1728. Both fixed: the comment now uses quoted text instead of backticks, and the script polls `/Volumes/PHD2` for up to 5 s before talking to Finder (plus a 1 s `delay` at the top of the AppleScript for belt-and-suspenders).
+
+### Fixed
 - `debian/openastro-phd2.postrm` now removes `/var/lib/openastro-phd2` on package purge. The postinst creates this directory for runtime state (calibration, profiles, logs); Debian policy requires purge to delete all package state. Without this, `apt purge openastro-phd2` would leave the state dir orphaned on disk. CodeRabbit feedback on PR #12.
 
 ### Changed

@@ -434,6 +434,16 @@ DEVICE=$(awk '/Apple_HFS/ {print $1; exit}' "$ATTACH_LOG")
 rm -f "$ATTACH_LOG"
 [[ -n "$DEVICE" ]] || err "Could not determine device node for mounted staging DMG."
 
+# hdiutil attach returns once the kernel mount is up, but Finder learns about
+# the volume asynchronously via diskarbitrationd. On Tahoe the race is tight
+# enough that the AppleScript below raises -1728 ("Can't get disk PHD2")
+# without this settle. Poll for the mountpoint to be readable from userspace
+# before talking to Finder.
+for _ in 1 2 3 4 5; do
+    [[ -d "$MOUNTPOINT" ]] && break
+    sleep 1
+done
+
 ln -s /Applications "${MOUNTPOINT}/Applications"
 mkdir -p "${MOUNTPOINT}/.background"
 cp "$BG_IMG" "${MOUNTPOINT}/.background/background.png"
@@ -446,8 +456,15 @@ cp "$BG_IMG" "${MOUNTPOINT}/.background/background.png"
 # bottom strip of the image it would otherwise clip.
 # Icon positions are in content-area coords (0,0 = top-left of the
 # content area, below the title bar).
+#
+# Note: backticks in this heredoc would be evaluated by bash as command
+# substitution (`text color` previously produced "text: command not found").
+# Keep comments backtick-free.
 osascript <<APPLESCRIPT
 tell application "Finder"
+    -- Give Finder another beat to register the freshly attached disk so
+    -- the "tell disk" below resolves cleanly on Tahoe.
+    delay 1
     tell disk "${VOLNAME}"
         open
         set current view of container window to icon view
@@ -459,10 +476,10 @@ tell application "Finder"
         set icon size of viewOptions to 128
         -- Standard 12pt label size. We'd rather force white text so labels
         -- read cleanly on the dark navy band, but macOS Tahoe's Finder
-        -- dropped `text color` on icon view options (raises -1728) and
-        -- there's no AppleScript path that still works. The try/end try
-        -- keeps the script working if Apple ever restores the property on
-        -- a future macOS.
+        -- dropped the "text color" property on icon view options (raises
+        -- -1728) and there's no AppleScript path that still works. The
+        -- try/end try keeps the script working if Apple ever restores
+        -- the property on a future macOS.
         set text size of viewOptions to 12
         try
             set text color of viewOptions to {65535, 65535, 65535}
