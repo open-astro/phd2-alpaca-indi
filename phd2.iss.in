@@ -64,8 +64,13 @@ Filename: {tmp}\dark_mover.vbs; Description: Relocate dark files; Flags: shellex
 Filename: {app}\phd2.exe; Description: Launch {#APP_NAME} after installation; Flags: nowait postinstall runasoriginaluser skipifsilent
 
 [Registry]
-Root: HKCU; Subkey: Software\StarkLabs; Flags: uninsdeletekeyifempty
-Root: HKCU; Subkey: Software\StarkLabs\PHDGuidingV2; Flags: uninsdeletekey
+; OpenAstro PHD2 2.0.0 moved wxConfig out of the StarkLabs vendor namespace so
+; we no longer share a registry hive with upstream PHD2 (the previous
+; uninsdeletekey on Software\StarkLabs\PHDGuidingV2 would silently wipe
+; upstream's settings when OpenAstro PHD2 was uninstalled). We deliberately
+; do NOT touch Software\StarkLabs on uninstall here; upstream PHD2 owns it.
+Root: HKCU; Subkey: Software\OpenAstro; Flags: uninsdeletekeyifempty
+Root: HKCU; Subkey: Software\OpenAstro\OpenAstroPHD2; Flags: uninsdeletekey
 
 [Code]
 

@@ -525,12 +525,20 @@ bool PhdApp::OnInit()
 # endif
 #endif
 
-    SetVendorName(_T("StarkLabs"));
+    // Vendor + app name determine wxConfig + wxStandardPaths locations. Pre-2.0.0
+    // this fork wrote to upstream PHD2's location (StarkLabs / PHD2|phd2), which
+    // meant running both apps shared settings (and Inno Setup's uninsdeletekey
+    // on the StarkLabs key would wipe upstream's HKCU on uninstall). 2.0.0 moves
+    // to an OpenAstro-specific namespace; PhdConfig's constructor handles the
+    // one-time migration from the legacy location.
+    SetVendorName(_T("OpenAstro"));
     // use SetAppName() to ensure the local data directory is found even if the name of the executable is changed
 #ifdef __APPLE__
-    SetAppName(_T("PHD2"));
+    SetAppName(_T("OpenAstroPHD2"));
+#elif defined(__WINDOWS__)
+    SetAppName(_T("OpenAstroPHD2"));
 #else
-    SetAppName(_T("phd2"));
+    SetAppName(_T("openastro-phd2"));
 #endif
     pConfig = new PhdConfig(m_instanceNumber);
 

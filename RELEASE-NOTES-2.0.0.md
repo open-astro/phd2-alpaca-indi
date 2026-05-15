@@ -9,6 +9,7 @@ First native macOS Apple Silicon build, a new unit test suite that hard-gates ev
 - **New:** native macOS arm64 build with self-contained `.dmg`, dark mode, drag-to-Applications installer
 - **New:** 6 unit test executables (78+ cases) pinning JSON parser, JSON-RPC schema, discovery, guide-algorithm math
 - **New:** every `.deb` / `.dmg` / `.exe` build hard-fails if any test fails. No more `--skip-tests` / `nocheck` / warn-and-continue
+- **New:** safe side-by-side install with upstream PHD2 — settings, registry hive, install dirs, and package names are all OpenAstro-namespaced; 1.3.0 profiles auto-migrate on first launch
 - **Dropped:** Intel Mac, pre-Tahoe macOS, 32-bit Windows
 - **Changed:** macOS bundle ID `org.openphdguiding.phd2` → `net.openastro.phd2`
 
@@ -18,7 +19,8 @@ First native macOS Apple Silicon build, a new unit test suite that hard-gates ev
 |---|---|
 | **Intel Mac removed** | arm64-only. No universal binary. Use upstream PHD2 if you need Intel. |
 | **macOS floor: 26 Tahoe** | Was 10.14. Sonoma / Sequoia users stay on 1.3.0. |
-| **macOS bundle ID changed** | Existing profiles don't auto-migrate. To keep settings: `cp ~/Library/Preferences/org.openphdguiding.phd2.plist ~/Library/Preferences/net.openastro.phd2.plist` |
+| **macOS bundle ID changed** | `org.openphdguiding.phd2` → `net.openastro.phd2`. Existing macOS-specific preferences (e.g. window positions cached by AppKit) don't auto-migrate; to keep them: `cp ~/Library/Preferences/org.openphdguiding.phd2.plist ~/Library/Preferences/net.openastro.phd2.plist`. (Profile / equipment settings auto-migrate via the wxConfig namespace move below — this row only matters if you've heavily customized macOS-native prefs.) |
+| **wxConfig namespace moved to OpenAstro** | Previously OpenAstro PHD2 shared settings storage with upstream PHD2 (`Software\StarkLabs\PHDGuidingV2` on Windows, `~/.PHDGuidingV2` on Linux/macOS). 2.0.0 moves to `Software\OpenAstro\OpenAstroPHD2` / `~/.OpenAstroPHD2` so both apps can be installed side-by-side without stepping on each other (and so uninstalling OpenAstro PHD2 no longer wipes upstream's HKCU key). **Existing OpenAstro PHD2 1.3.0 profiles, calibration, and equipment settings auto-migrate on first 2.0.0 launch** — the legacy store is read-only during migration, so upstream PHD2's settings (if also installed) are preserved. Dark library (`Documents/PHD2`) and defect maps are not migrated automatically; re-point via Manage Dark Library if needed. |
 | **Linux package renamed `phd2-alpaca` → `openastro-phd2`** | `sudo apt remove phd2-alpaca` first, then install the new `openastro-phd2-2.0.0-<arch>.deb`. System user, install paths, and systemd unit also renamed. `Conflicts`/`Replaces` metadata blocks side-by-side installs. |
 | **32-bit Windows removed** | x64 only. `-A Win32` is rejected at configure time. |
 | **Legacy macOS guide drivers removed** | `GUIDE_GPUSB`, `GUIDE_GCUSBST4`, `GUIDE_EQUINOX`, `GUIDE_EQMAC` — none worked on modern macOS anyway. Use Alpaca/INDI guide outputs. |
@@ -29,7 +31,7 @@ First native macOS Apple Silicon build, a new unit test suite that hard-gates ev
 
 ### macOS Apple Silicon native build
 
-`./build-dmg.sh` produces a self-contained `PHD2-2.0.0-macOS-arm64.dmg`. All Homebrew dylibs (cfitsio, wxWidgets, image libs, etc.) bundled into the `.app` so users don't need Homebrew. Dark mode follows System Settings. Drag-to-Applications install window with OpenAstro branding. **Unsigned** — first launch needs right-click → Open.
+`./build-dmg.sh` produces a self-contained `openastro-phd2-2.0.0-arm64.dmg`. All Homebrew dylibs (cfitsio, wxWidgets, image libs, etc.) bundled into the `.app` so users don't need Homebrew. Dark mode follows System Settings. Drag-to-Applications install window with OpenAstro branding. **Unsigned** — first launch needs right-click → Open.
 
 ### Unit test suite + hard CI gate
 
