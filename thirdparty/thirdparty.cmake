@@ -146,7 +146,7 @@ if(WIN32)
   )
 else()
   # On macOS the Homebrew bottle ships only the dylib; we bundle it into
-  # PHD2.app/Contents/Frameworks/ via a POST_BUILD step in CMakeLists.txt
+  # "OpenAstro PHD2.app"/Contents/Frameworks/ via a POST_BUILD step in CMakeLists.txt
   # and rewrite install names so the .app stays redistributable.
   find_package(CFITSIO REQUIRED)
   include_directories(${CFITSIO_INCLUDE_DIR})
