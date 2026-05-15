@@ -9,6 +9,7 @@ debian/files
 debian/*.debhelper
 debian/*.debhelper.log
 debian/*.substvars
+debian/openastro-phd2/
 debian/phd2-alpaca/
 
 # dpkg-buildpackage / dh_auto_configure out-of-tree build
