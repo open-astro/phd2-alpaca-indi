@@ -411,19 +411,18 @@ void AlpacaConfig::OnDiscover(wxCommandEvent& evt)
     //
     // Re-asserting the standard cursor inside the loop is a macOS workaround:
     // wxOSX (and AppKit when an event handler runs > ~2s) will swap to a
-    // wait/watch cursor on its own. Forcing the standard cursor each tick
-    // keeps the pointer normal while the worker runs.
+    // wait/watch cursor on its own. Only the global wxSetCursor() override
+    // wins during a long handler — per-window SetCursor() doesn't reach
+    // AppKit's busy-cursor logic — so that's the only call we make.
     Debug.Write("AlpacaConfig::OnDiscover: calling AlpacaDiscovery::DiscoverServers\n");
     auto fut = std::async(std::launch::async, []() { return AlpacaDiscovery::DiscoverServers(2, 2); });
-    SetCursor(*wxSTANDARD_CURSOR);
     while (fut.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready)
     {
         wxYield();
         wxSetCursor(*wxSTANDARD_CURSOR);
-        SetCursor(*wxSTANDARD_CURSOR);
     }
     wxArrayString servers = fut.get();
-    SetCursor(wxNullCursor);
+    wxSetCursor(wxNullCursor);
     Debug.Write(wxString::Format("AlpacaConfig::OnDiscover: discover returned %u servers\n",
                                  static_cast<unsigned int>(servers.GetCount())));
 
