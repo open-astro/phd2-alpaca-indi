@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `test_jsonrpc_schema.cpp` now type-guards every `json_value` union access. Added `ASSERT_EQ(units->type, JSON_STRING)` and `ASSERT_EQ(axes->type, JSON_STRING)` before the `string_value` reads in the `GetLockShiftParams` enabled branch, and upgraded the `expect_string_field` / `expect_numeric_field` / `expect_bool_field` helpers from `EXPECT_EQ` to `ASSERT_EQ` on the type check. Wrong-type accesses now hard-stop the test instead of progressing to UB on a mismatched union member. CodeRabbit feedback on PR #12.
+
 ### Changed
 - `debian/rules` `override_dh_auto_test` now resolves the cmake build dir deterministically: tries `obj-$(DEB_HOST_GNU_TYPE)` first (the canonical path `dh_auto_configure` creates), and only falls back to a **sorted** `obj-*-linux-*` glob if that's missing. Previously used `ls -d obj-*-linux-* | head -1` which would pick an arbitrary directory if cross-build residue from a prior arch was sitting in the tree, silently invalidating the test gate. CodeRabbit feedback on PR #12.
 - README "Building Installers" Windows entry expanded with output filename, bundled-dependency list (vcpkg DLLs: wxWidgets, OpenCV, curl, libINDI, cfitsio), unsigned/SmartScreen caveat, and Inno Setup install path — matching the level of detail the macOS entry already had.

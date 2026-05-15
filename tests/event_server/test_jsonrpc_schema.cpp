@@ -39,25 +39,29 @@ const json_value *child(const json_value *parent, const char *name)
     return nullptr;
 }
 
+// json_value uses a union for its value member; accessing the wrong member
+// after a failed type check is UB. The type assertions below are ASSERT_EQ
+// (not EXPECT_EQ) so a wrong-type field hard-stops the test before any
+// caller that reaches for `->string_value` etc. can hit UB.
 void expect_string_field(const json_value *parent, const char *name)
 {
     const json_value *v = child(parent, name);
     ASSERT_NE(v, nullptr) << "missing string field: " << name;
-    EXPECT_EQ(v->type, JSON_STRING) << "field " << name << " not string";
+    ASSERT_EQ(v->type, JSON_STRING) << "field " << name << " not string";
 }
 
 void expect_numeric_field(const json_value *parent, const char *name)
 {
     const json_value *v = child(parent, name);
     ASSERT_NE(v, nullptr) << "missing numeric field: " << name;
-    EXPECT_TRUE(v->type == JSON_INT || v->type == JSON_FLOAT) << "field " << name << " not numeric";
+    ASSERT_TRUE(v->type == JSON_INT || v->type == JSON_FLOAT) << "field " << name << " not numeric";
 }
 
 void expect_bool_field(const json_value *parent, const char *name)
 {
     const json_value *v = child(parent, name);
     ASSERT_NE(v, nullptr) << "missing bool field: " << name;
-    EXPECT_EQ(v->type, JSON_BOOL) << "field " << name << " not bool";
+    ASSERT_EQ(v->type, JSON_BOOL) << "field " << name << " not bool";
 }
 
 }
@@ -293,10 +297,12 @@ TEST(JsonRpcSchema, GetLockShiftParams)
         EXPECT_EQ(rate->type, JSON_ARRAY);
         const json_value *units = child(r, "units");
         ASSERT_NE(units, nullptr);
+        ASSERT_EQ(units->type, JSON_STRING); // json_value is a union; checking type before string_value avoids UB
         // arcsec/hr or pixels/hr — value contract
         EXPECT_TRUE(std::strcmp(units->string_value, "arcsec/hr") == 0 || std::strcmp(units->string_value, "pixels/hr") == 0);
         const json_value *axes = child(r, "axes");
         ASSERT_NE(axes, nullptr);
+        ASSERT_EQ(axes->type, JSON_STRING);
         EXPECT_TRUE(std::strcmp(axes->string_value, "RA/Dec") == 0 || std::strcmp(axes->string_value, "X/Y") == 0);
     }
 }
