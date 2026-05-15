@@ -139,6 +139,10 @@ TEST(JsonRpcSchema, SettleDoneEvent)
         expect_numeric_field(p.Root(), "Status");
         expect_numeric_field(p.Root(), "TotalFrames");
         expect_numeric_field(p.Root(), "DroppedFrames");
+        // Error MUST be absent on success — NINA/KStars read `Error` as a
+        // truthy indicator, so a spurious empty-string Error on Status=0
+        // looks like a settle failure to them.
+        EXPECT_EQ(child(p.Root(), "Error"), nullptr);
     }
     {
         const char *fixture = "{\"Event\":\"SettleDone\",\"Timestamp\":1.0,\"Host\":\"h\",\"Inst\":1,"

@@ -45,12 +45,19 @@ override_dh_auto_configure:
 #
 # We invoke ctest directly instead of dh_auto_test because dh_auto_test
 # itself respects nocheck and short-circuits before running anything.
-# Find the cmake build dir by glob since the obj-* name varies by host
-# triplet (obj-x86_64-linux-gnu, obj-aarch64-linux-gnu, etc.).
+#
+# Build-dir resolution is deterministic-first: try the canonical
+# obj-$(DEB_HOST_GNU_TYPE) (what dh_auto_configure creates by default), and
+# only fall back to a sorted glob if that's missing. The glob is sorted so
+# multiple obj-*-linux-* dirs (e.g. residue from a prior cross-build) pick
+# the same one across runs instead of relying on filesystem ordering.
 override_dh_auto_test:
-	@build_dir=$$(ls -d obj-*-linux-* 2>/dev/null | head -1); \
+	@build_dir="obj-$(DEB_HOST_GNU_TYPE)"; \
+	if [ ! -d "$$build_dir" ]; then \
+		build_dir=$$(find . -maxdepth 1 -type d -name 'obj-*-linux-*' | sort | head -1); \
+	fi; \
 	if [ -z "$$build_dir" ] || [ ! -f "$$build_dir/CTestTestfile.cmake" ]; then \
-		echo "ERROR: cmake build dir with CTestTestfile.cmake not found under obj-*-linux-*" >&2; \
+		echo "ERROR: cmake build dir with CTestTestfile.cmake not found (tried obj-$(DEB_HOST_GNU_TYPE) and obj-*-linux-* glob)" >&2; \
 		exit 1; \
 	fi; \
 	echo "Running ctest in $$build_dir"; \

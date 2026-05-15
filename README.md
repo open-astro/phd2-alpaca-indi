@@ -68,7 +68,7 @@ Each platform has a packaging script that produces a redistributable artifact:
 
 - **Linux:** `./build-deb.sh` -> `.deb` package
 - **macOS:** `./build-dmg.sh` -> `tmp/PHD2-<version>-macOS-arm64.dmg` (bundles every Homebrew dylib into the `.app` so end users don't need Homebrew; unsigned, so first launch requires right-click -> Open)
-- **Windows:** `.\build-exe.ps1` -> `.exe` installer (requires [Inno Setup 5](https://jrsoftware.org/isinfo.php))
+- **Windows:** `.\build-exe.ps1` -> `tmp\phd2x64-v<version>-installer.exe` (Inno Setup-driven installer that bundles every vcpkg-built dependency DLL — wxWidgets, OpenCV, curl, libINDI, cfitsio, etc. — so end users don't need vcpkg or VS runtime; unsigned, so Windows SmartScreen will warn on first launch, click "More info" -> "Run anyway"). Requires [Inno Setup 5](https://jrsoftware.org/isinfo.php) at `C:\Program Files\Inno Setup 5\ISCC.exe` (or the `(x86)` path).
 
 **All three build scripts run the full test suite before packaging. If any test fails, no installer is produced.** Fix the failing tests, or pass `-DBUILD_TESTING=OFF` at configure time to drop the test build entirely.
 

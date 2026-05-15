@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `debian/rules` `override_dh_auto_test` now resolves the cmake build dir deterministically: tries `obj-$(DEB_HOST_GNU_TYPE)` first (the canonical path `dh_auto_configure` creates), and only falls back to a **sorted** `obj-*-linux-*` glob if that's missing. Previously used `ls -d obj-*-linux-* | head -1` which would pick an arbitrary directory if cross-build residue from a prior arch was sitting in the tree, silently invalidating the test gate. CodeRabbit feedback on PR #12.
+- README "Building Installers" Windows entry expanded with output filename, bundled-dependency list (vcpkg DLLs: wxWidgets, OpenCV, curl, libINDI, cfitsio), unsigned/SmartScreen caveat, and Inno Setup install path — matching the level of detail the macOS entry already had.
+
+### Fixed
+- `test_jsonrpc_schema::JsonRpcSchema.SettleDoneEvent` now asserts `Error` is absent on success (Status==0) responses, not just on the failure branch. Schema spec says Error exists iff Status≠0; downstream consumers (NINA, KStars) read `Error` as a truthy "did the settle fail" indicator, so a spurious empty-string Error on success would look like a settle failure to them. CodeRabbit feedback on PR #12.
+
 ## [2.0.0] - 2026-05-15
 
 ### Added
