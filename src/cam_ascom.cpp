@@ -357,6 +357,29 @@ static bool ASCOM_Image(IDispatch *cam, usImage& img, bool is_subframe, const wx
             return true;
         }
 
+        // The ASCOM driver should return a SAFEARRAY whose dimensions match the
+        // ROI we set via ASCOM_SetROI. If it doesn't (driver bug), bail out
+        // rather than walk off either the SAFEARRAY buffer or img.ImageData.
+        if (xsize != roi.width || ysize != roi.height)
+        {
+            Debug.Write(wxString::Format("ASCOM camera: subframe size mismatch -- driver returned %ldx%ld, expected %dx%d\n",
+                                         xsize, ysize, roi.width, roi.height));
+            hr = SafeArrayUnaccessData(rawarray);
+            hr = SafeArrayDestroyData(rawarray);
+            return true;
+        }
+        // And the requested ROI must fit inside the full-frame image we're
+        // pasting into. This is normally guaranteed by the takeSubframe gate
+        // upstream, but the cost of double-checking is one branch.
+        if (roi.x < 0 || roi.y < 0 || roi.x + roi.width > size->GetWidth() || roi.y + roi.height > size->GetHeight())
+        {
+            Debug.Write(wxString::Format("ASCOM camera: subframe ROI (%d,%d %dx%d) out of bounds for frame %dx%d\n", roi.x,
+                                         roi.y, roi.width, roi.height, size->GetWidth(), size->GetHeight()));
+            hr = SafeArrayUnaccessData(rawarray);
+            hr = SafeArrayDestroyData(rawarray);
+            return true;
+        }
+
         if (img.Init(*size))
         {
             pFrame->Alert(_("Memory allocation error"));
@@ -1008,7 +1031,14 @@ bool CameraASCOM::Capture(usImage& img, const CaptureParams& captureParams)
 
     if (roi != m_roi)
     {
-        ASCOM_SetROI(cam.IDisp(), roi, &excep);
+        if (ASCOM_SetROI(cam.IDisp(), roi, &excep))
+        {
+            Debug.AddLine(ExcepMsg("ASCOM_SetROI failed", excep));
+            pFrame->Alert(ExcepMsg(_("ASCOM error -- Cannot set ROI"), excep));
+            // leave m_roi stale-but-unchanged so the next attempt re-tries; do
+            // not proceed into StartExposure with an unknown driver-side ROI.
+            return true;
+        }
         m_roi = roi;
     }
 

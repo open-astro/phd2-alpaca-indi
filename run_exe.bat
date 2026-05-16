@@ -113,6 +113,11 @@ if errorlevel 1 (
 )
 
 cd tmp
+if errorlevel 1 (
+    echo.
+    echo ERROR: Failed to change directory to tmp\.
+    exit /b 1
+)
 
 set VCPKG_MAX_CONCURRENCY=%NUMBER_OF_PROCESSORS%
 set CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%
