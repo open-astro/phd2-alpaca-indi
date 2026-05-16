@@ -57,6 +57,10 @@ wxSize UNDEFINED_FRAME_SIZE = wxSize(0, 0);
 # include "cam_indi.h"
 #endif
 
+#if defined(ASCOM_CAMERA)
+# include "cam_ascom.h"
+#endif
+
 const wxString GuideCamera::DEFAULT_CAMERA_ID = wxEmptyString;
 
 double GuideCamera::GetProfilePixelSize()
@@ -130,6 +134,13 @@ wxArrayString GuideCamera::GuideCameraList()
 #if defined(INDI_CAMERA)
     CameraList.Add(INDICamName());
 #endif
+#if defined(ASCOM_CAMERA)
+    {
+        wxArrayString ascomCameras = ASCOMCameraFactory::EnumAscomCameras();
+        for (unsigned int i = 0; i < ascomCameras.Count(); i++)
+            CameraList.Add(ascomCameras[i]);
+    }
+#endif
 
     CameraList.Sort(&CompareNoCase);
 
@@ -152,17 +163,29 @@ GuideCamera *GuideCamera::Factory(const wxString& choice)
         if (false) // so else ifs can follow
         {
         }
-        // Check INDI and Alpaca first since those choices may match other choices below
+        // Route by explicit prefix (INDI/Alpaca) or by the marker appended by
+        // each transport's displayName helper (ASCOM). Avoid plain Contains()
+        // matches: a vendor name containing "INDI"/"Alpaca"/"ASCOM" anywhere
+        // would otherwise misroute.
 #if defined(INDI_CAMERA)
-        else if (choice.Contains(_T("INDI")))
+        else if (choice.StartsWith(_T("INDI Camera")))
         {
             pReturn = INDICameraFactory::MakeINDICamera();
         }
 #endif
 #if defined(ALPACA_CAMERA)
-        else if (choice.Contains(_T("Alpaca")))
+        else if (choice.StartsWith(_T("Alpaca Camera")))
         {
             pReturn = AlpacaCameraFactory::MakeAlpacaCamera();
+        }
+#endif
+#if defined(ASCOM_CAMERA)
+        // displayName() in cam_ascom.cpp either appends " (ASCOM)" or leaves
+        // the vendor's already-ASCOM-prefixed name as-is (e.g. "ASCOM OmniSim
+        // ..."). Match both shapes explicitly.
+        else if (choice.EndsWith(_T(" (ASCOM)")) || choice.StartsWith(_T("ASCOM ")))
+        {
+            pReturn = ASCOMCameraFactory::MakeASCOMCamera(choice);
         }
 #endif
         else if (choice == _("None"))

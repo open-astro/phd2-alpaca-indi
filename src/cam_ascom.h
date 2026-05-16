@@ -1,9 +1,8 @@
 /*
- *  cameras.h
- *  PHD Guiding
+ *  cam_ascom.h
+ *  Open PHD Guiding
  *
- *  Created by Craig Stark.
- *  Copyright (c) 2006-2010 Craig Stark.
+ *  Copyright (c) 2020 Andy Galasso.
  *  All rights reserved.
  *
  *  This source code is distributed under the following "BSD" license
@@ -14,7 +13,7 @@
  *    Redistributions in binary form must reproduce the above copyright notice,
  *     this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *    Neither the name of Craig Stark, Stark Labs nor the names of its
+ *    Neither the name of openphdguiding.org nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
@@ -32,22 +31,16 @@
  *
  */
 
-#ifndef CAMERAS_INCLUDED
+#ifndef CAM_ASCOM_INCLUDED
+#define CAM_ASCOM_INCLUDED
 
-/* Current issues:
-- Need to fix the LE webcams to either not need wxVidCapLib or need a good way
-  to detect or package this
-  */
+class GuideCamera;
 
-// phd2-alpaca build: Alpaca + INDI on all platforms; ASCOM on Windows only.
-// ASCOM_CAMERA is a thin late-bound COM shim over user-installed ASCOM camera
-// drivers (no vendor SDKs are bundled), mirroring how scopes.h gates GUIDE_ASCOM.
-# define ALPACA_CAMERA
-# define INDI_CAMERA
-# define SIMULATOR
+class ASCOMCameraFactory
+{
+public:
+    static wxArrayString EnumAscomCameras();
+    static GuideCamera *MakeASCOMCamera(const wxString& name);
+};
 
-# if defined(__WINDOWS__)
-#  define ASCOM_CAMERA
-# endif
-
-#endif // CAMERAS_INCLUDED
+#endif // CAM_ASCOM_INCLUDED

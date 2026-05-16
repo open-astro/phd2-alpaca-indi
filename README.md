@@ -4,7 +4,7 @@
 
 ## Overview
 
-This repository contains an OpenAstro-maintained build derived from PHD2 that supports **ASCOM Alpaca** and **INDI** equipment drivers only. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows, with [**INDI**](https://indilib.org/) as the alternative path for Linux/Pi rigs and remote INDI servers.
+This repository contains an OpenAstro-maintained build derived from PHD2 that supports **ASCOM Alpaca**, **INDI**, and (on Windows) **ASCOM COM** equipment drivers. It is intended for use with [**AlpacaBridge**](https://github.com/open-astro/AlpacaBridge) and related Alpaca-based workflows, with [**INDI**](https://indilib.org/) as the alternative path for Linux/Pi rigs and remote INDI servers, and native ASCOM as a Windows fallback for hardware whose vendor only ships an ASCOM driver.
 
 ## Important Notice
 
@@ -14,13 +14,14 @@ This repository contains an OpenAstro-maintained build derived from PHD2 that su
 
 ## Scope
 
-This fork supports **only** ASCOM Alpaca and INDI for cameras, mounts, and rotators:
+This fork supports three driver transports for cameras, mounts, and rotators, all of which rely on **user-installed** drivers — no vendor SDKs are bundled:
 
 - **ASCOM Alpaca** - cameras, mounts, rotators (network-based; works on Windows, Linux, macOS, Raspberry Pi).
 - **INDI** - cameras, mounts, rotators (native INDI client; ideal for Linux/Pi rigs or remote INDI servers).
+- **ASCOM COM** (Windows only) - cameras, mounts, rotators (late-bound to ASCOM Platform; the user installs whichever ASCOM driver their hardware vendor ships).
 - Designed to work alongside AlpacaBridge.
 
-**Removed compared to upstream PHD2:** native ASCOM (COM/Windows-only), all vendor SDK camera backends (ZWO, QHY, SBIG, Altair, ToupTek, SVBony, PlayerOne, Moravian, etc.), adaptive optics / step-guiders, on-camera ST4, and auxiliary mounts. If you need those, use upstream OpenPHDGuiding/phd2 instead.
+**Removed compared to upstream PHD2:** all vendor SDK camera backends (ZWO, QHY, SBIG, Altair, ToupTek, SVBony, PlayerOne, Moravian, etc.), adaptive optics / step-guiders, on-camera ST4, and auxiliary mounts. The intentional shape of this fork is that every supported camera/mount/rotator is a thin protocol shim over a driver the user installs and the vendor maintains — we don't take on the burden of tracking vendor SDKs. If you need a bundled-SDK build, use upstream OpenPHDGuiding/phd2 instead.
 
 ## Running
 
@@ -54,13 +55,13 @@ The bundle is at `tmp/OpenAstro PHD2.app`.
 Requires Visual Studio 2022 and `git` on `PATH`. x64 only.
 
 ```cmd
-run_exe.bat                    REM incremental build (default)
-run_exe.bat -rebuild           REM wipe tmp\ and full rebuild
+run_exe.bat                    REM clean configure + build (default)
+run_exe.bat -config            REM clean configure only, no build
 run_exe.bat -launch            REM build then start phd2.exe
 run_exe.bat -help              REM all options
 ```
 
-First clean build takes 10-60 minutes (vcpkg builds OpenCV from source); subsequent incremental builds are 1-5 minutes.
+Every run wipes `tmp\` and starts clean - matches `run_deb.sh` and `run_dmg.sh` on the other platforms (and the installer script `build-exe.ps1` on this one). Each build takes 10-60 minutes depending on hardware, dominated by vcpkg compiling OpenCV from source.
 
 ## Building Installers
 
