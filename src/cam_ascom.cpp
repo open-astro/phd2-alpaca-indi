@@ -317,11 +317,23 @@ static bool ASCOM_Image(IDispatch *cam, usImage& img, bool is_subframe, const wx
 
     SAFEARRAY *rawarray = vRes.parray;
 
+    // ImageArray must be a 2-D SAFEARRAY per ASCOM ICameraV3; bail rather than
+    // read undefined bounds if the driver misbehaves.
+    if (SafeArrayGetDim(rawarray) != 2)
+    {
+        Debug.Write(wxString::Format("ASCOM camera: ImageArray is not 2-D (got %u dims)\n", SafeArrayGetDim(rawarray)));
+        SafeArrayDestroyData(rawarray);
+        return true;
+    }
+
     long ubound1, ubound2, lbound1, lbound2;
-    SafeArrayGetUBound(rawarray, 1, &ubound1);
-    SafeArrayGetUBound(rawarray, 2, &ubound2);
-    SafeArrayGetLBound(rawarray, 1, &lbound1);
-    SafeArrayGetLBound(rawarray, 2, &lbound2);
+    if (FAILED(SafeArrayGetUBound(rawarray, 1, &ubound1)) || FAILED(SafeArrayGetUBound(rawarray, 2, &ubound2)) ||
+        FAILED(SafeArrayGetLBound(rawarray, 1, &lbound1)) || FAILED(SafeArrayGetLBound(rawarray, 2, &lbound2)))
+    {
+        Debug.Write("ASCOM camera: SafeArrayGet{U,L}Bound failed\n");
+        SafeArrayDestroyData(rawarray);
+        return true;
+    }
 
     long *rawdata;
     hr = SafeArrayAccessData(rawarray, (void **) &rawdata);
@@ -630,7 +642,10 @@ bool CameraASCOM::Connect(const wxString& camId)
     }
     else
     {
-        m_bitsPerPixel = vRes.intVal <= 255 ? 8 : 16;
+        // ASCOM MaxADU is a 32-bit Int; use lVal (consistent with the
+        // CameraXSize/CameraYSize reads above) so high-bit-depth detectors
+        // aren't truncated through the 16-bit intVal field.
+        m_bitsPerPixel = vRes.lVal <= 255 ? 8 : 16;
     }
 
     // Get the interface version of the driver
