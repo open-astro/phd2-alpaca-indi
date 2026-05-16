@@ -57,6 +57,10 @@ wxSize UNDEFINED_FRAME_SIZE = wxSize(0, 0);
 # include "cam_indi.h"
 #endif
 
+#if defined(ASCOM_CAMERA)
+# include "cam_ascom.h"
+#endif
+
 const wxString GuideCamera::DEFAULT_CAMERA_ID = wxEmptyString;
 
 double GuideCamera::GetProfilePixelSize()
@@ -130,6 +134,13 @@ wxArrayString GuideCamera::GuideCameraList()
 #if defined(INDI_CAMERA)
     CameraList.Add(INDICamName());
 #endif
+#if defined(ASCOM_CAMERA)
+    {
+        wxArrayString ascomCameras = ASCOMCameraFactory::EnumAscomCameras();
+        for (unsigned int i = 0; i < ascomCameras.Count(); i++)
+            CameraList.Add(ascomCameras[i]);
+    }
+#endif
 
     CameraList.Sort(&CompareNoCase);
 
@@ -163,6 +174,16 @@ GuideCamera *GuideCamera::Factory(const wxString& choice)
         else if (choice.Contains(_T("Alpaca")))
         {
             pReturn = AlpacaCameraFactory::MakeAlpacaCamera();
+        }
+#endif
+#if defined(ASCOM_CAMERA)
+        // ASCOM must come after INDI/Alpaca so a name like "ASCOM ..." that
+        // belongs to another transport (none exist today, but kept defensive)
+        // is not misrouted. Match either the "(ASCOM)" suffix appended by
+        // displayName(), or an ASCOM-prefixed vendor name.
+        else if (choice.Contains(_T("ASCOM")))
+        {
+            pReturn = ASCOMCameraFactory::MakeASCOMCamera(choice);
         }
 #endif
         else if (choice == _("None"))

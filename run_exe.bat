@@ -4,23 +4,24 @@ setlocal
 rem =======================================================================
 rem  run_exe.bat - Configure and build PHD2 on Windows
 rem
+rem  Every run wipes tmp\ and starts clean, matching run_deb.sh and
+rem  run_dmg.sh on the other platforms (and build-exe.ps1's behavior on
+rem  this one). This keeps the dev build deterministic and avoids the
+rem  in-place CMake reconfigure path, which has historically tripped on
+rem  vcpkg's FetchContent UPDATE step.
+rem
 rem  Usage:
-rem    run_exe.bat                Incremental build (default)
-rem    run_exe.bat -rebuild       Wipe tmp\ first, then full configure + build
-rem    run_exe.bat -config        Configure only, no build
-rem    run_exe.bat -launch        Build then start phd2.exe
-rem    run_exe.bat -rebuild -launch    Combine flags
+rem    run_exe.bat                Clean configure + build (default)
+rem    run_exe.bat -config        Clean configure only, no build
+rem    run_exe.bat -launch        Clean configure + build, then start phd2.exe
 rem    run_exe.bat -help          Show this help
 rem =======================================================================
 
-set CLEAN=0
 set BUILD=1
 set LAUNCH=0
 
 :parse_args
 if "%~1"=="" goto args_done
-if /i "%~1"=="-rebuild"     ( set CLEAN=1   & shift & goto parse_args )
-if /i "%~1"=="--rebuild"    ( set CLEAN=1   & shift & goto parse_args )
 if /i "%~1"=="-config"      ( set BUILD=0   & shift & goto parse_args )
 if /i "%~1"=="--config"     ( set BUILD=0   & shift & goto parse_args )
 if /i "%~1"=="-config-only" ( set BUILD=0   & shift & goto parse_args )
@@ -36,11 +37,11 @@ goto show_help
 
 :show_help
 echo.
-echo Usage: run_exe.bat [-rebuild] [-config] [-launch] [-help]
+echo Usage: run_exe.bat [-config] [-launch] [-help]
 echo.
-echo   -rebuild  Wipe tmp\ and run a full configure + build from scratch.
-echo             Without this, the script does an incremental build on
-echo             top of the existing tmp\ (much faster after first run).
+echo Every run wipes tmp\ and configures + builds from scratch (matches the
+echo behavior of run_deb.sh, run_dmg.sh, and build-exe.ps1).
+echo.
 echo   -config   Only run cmake configure, do not build.
 echo   -launch   After a successful build, start tmp\Release\phd2.exe.
 echo   -help     Show this message.
@@ -49,15 +50,6 @@ exit /b 0
 
 :args_done
 
-rem -----------------------------------------------------------------------
-rem  Treat "tmp\ does not exist" as an implicit -rebuild.
-rem -----------------------------------------------------------------------
-if not exist tmp set CLEAN=1
-
-if %CLEAN%==1 goto do_clean
-goto skip_clean
-
-:do_clean
 rem -----------------------------------------------------------------------
 rem  Kill known build-process stragglers that hold file handles in tmp\.
 rem  Returns nonzero when the process isn't running -- that's fine.
@@ -120,8 +112,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:skip_clean
-
 cd tmp
 
 set VCPKG_MAX_CONCURRENCY=%NUMBER_OF_PROCESSORS%
@@ -129,9 +119,9 @@ set CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%
 set "CL=%CL% /MP"
 
 rem -----------------------------------------------------------------------
-rem  Configure. For incremental, cmake --build below would also pick up
-rem  CMakeLists changes, but running cmake explicitly surfaces config
-rem  errors earlier and lets -config work on its own.
+rem  Configure. Running cmake explicitly (vs. relying on cmake --build to
+rem  reconfigure) surfaces config errors earlier and lets -config work on
+rem  its own.
 rem -----------------------------------------------------------------------
 cmake -Wno-dev -A x64 ..
 if errorlevel 1 (

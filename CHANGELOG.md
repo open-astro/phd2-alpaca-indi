@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- ASCOM camera support on Windows. Ports upstream `cam_ascom.{cpp,h}` and wires the ASCOM Chooser's registered Camera devices into the New Profile Wizard's camera dropdown, mirroring how the existing mount/rotator paths surface ASCOM drivers. The driver itself lives outside PHD2 — the user installs whatever ASCOM camera driver their hardware vendor ships, and PHD2 talks to it via late-bound COM (no vendor SDK is bundled). Gated by `ASCOM_CAMERA` in `cameras.h`, only enabled when `__WINDOWS__` is defined; the source files compile out on macOS/Linux.
+
+### Changed
+- `run_exe.bat` now wipes `tmp\` and starts clean on every run, matching `run_deb.sh` and `run_dmg.sh` (which already did this) and `build-exe.ps1`. The `-rebuild` flag is gone since it's no longer meaningful — every run is a rebuild. Removes the in-place CMake reconfigure path that re-triggered vcpkg's `FetchContent` UPDATE step and could fail on the unqualified `bootstrap-vcpkg.bat` lookup. Cost: every Windows dev build is now 10–60 min instead of 1–5 min incremental; benefit: deterministic, matches the other platforms, no more reconfigure-induced FetchContent failures.
+- Camera factory routing in `src/camera.cpp` uses explicit anchors (`StartsWith("INDI Camera")` / `StartsWith("Alpaca Camera")` for the built-in transports, `EndsWith(" (ASCOM)") || StartsWith("ASCOM ")` for ASCOM) instead of the previous loose `Contains()` matches, so a vendor camera whose display name happens to contain "INDI"/"Alpaca"/"ASCOM" anywhere can no longer be misrouted to the wrong factory.
+
 ## [2.0.0] - 2026-05-15
 
 ### Added

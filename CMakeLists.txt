@@ -210,6 +210,14 @@ list(APPEND cam_SRC
   ${phd_src_dir}/cam_indi.h
 )
 
+# ASCOM camera support (Windows-only; gated by ASCOM_CAMERA macro in cameras.h).
+# Files are always listed so the source tree is platform-independent; the macro
+# compiles them out on non-Windows, mirroring how scope_ascom is handled above.
+list(APPEND cam_SRC
+  ${phd_src_dir}/cam_ascom.cpp
+  ${phd_src_dir}/cam_ascom.h
+)
+
 source_group(Cameras FILES ${cam_SRC})
 
 set(scopes_SRC
