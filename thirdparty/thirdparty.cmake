@@ -364,23 +364,68 @@ endif()
 #
 #  INDIGO (CloudMakers protocol; coexists with INDI)
 #
-#  Local-development lookup only for now: FindINDIGO.cmake hunts $INDIGO_ROOT,
-#  a sibling ../indigo checkout, then /usr/local + /opt/homebrew. The library
-#  is intentionally optional — if not found we silently disable the INDIGO
-#  transport instead of failing the build, since the INDI/Alpaca paths still
-#  work standalone. An ExternalProject_Add fallback (mirroring the INDI one
-#  above) will land alongside the Windows port once that path is in scope.
+#  Mirrors the libindi flow: opt-in USE_SYSTEM_LIBINDIGO consults
+#  FindINDIGO.cmake (which hunts $INDIGO_ROOT, sibling ../indigo, /usr/local,
+#  /opt/homebrew); otherwise ExternalProject_Add clones INDIGO from GitHub
+#  and builds libindigo at configure-time, so a fresh `git clone` of
+#  openastro-phd2 + `cmake -B build && make` just works without the user
+#  having to pre-build anything.
+#
+#  Windows is intentionally handled separately because INDIGO ships an
+#  MSVC client-SDK build (indigo_client.dll, not libindigo) under
+#  indigo_windows/msvc/ — see INDIGO_WINDOWS_PORT.md for the path that
+#  fills in that branch.
 #
 #############################################
 
-find_package(INDIGO QUIET)
-if(INDIGO_FOUND)
-  message(STATUS "INDIGO found at ${INDIGO_INCLUDE_DIR} (lib: ${INDIGO_LIBRARY})")
-  add_definitions(-DHAVE_INDIGO=1)
-  include_directories(SYSTEM ${INDIGO_INCLUDE_DIR})
-  list(APPEND PHD_LINK_EXTERNAL ${INDIGO_LIBRARIES})
+if(USE_SYSTEM_LIBINDIGO)
+  message(STATUS "Using system's libindigo")
+  find_package(INDIGO QUIET)
+  if(INDIGO_FOUND)
+    message(STATUS "INDIGO found at ${INDIGO_INCLUDE_DIR} (lib: ${INDIGO_LIBRARY})")
+    add_definitions(-DHAVE_INDIGO=1)
+    include_directories(SYSTEM ${INDIGO_INCLUDE_DIR})
+    list(APPEND PHD_LINK_EXTERNAL ${INDIGO_LIBRARIES})
+  else()
+    message(STATUS "INDIGO not found (USE_SYSTEM_LIBINDIGO=ON) — INDIGO transport disabled")
+  endif()
+elseif(WIN32)
+  message(STATUS "INDIGO Windows path is not yet wired — see INDIGO_WINDOWS_PORT.md")
 else()
-  message(STATUS "INDIGO not found — INDIGO transport will be compiled out (set INDIGO_ROOT to enable)")
+  include(ExternalProject)
+  set(indigo_INSTALL_DIR ${CMAKE_BINARY_DIR}/libindigo)
+  # The bundled `make` target produces build/lib/libindigo.{a,$SOEXT} and
+  # leaves the public headers in indigo_libs/indigo/. We don't run
+  # `make install` (which writes to /usr/local with sudo); instead we copy
+  # the artifacts into ${indigo_INSTALL_DIR} ourselves.
+  ExternalProject_Add(
+    indigo
+    GIT_REPOSITORY https://github.com/indigo-astronomy/indigo.git
+    GIT_TAG 22706e492206d29dd3e6fd6fa16fad91650f7491 # known-good HEAD circa 2026-05
+    CONFIGURE_COMMAND ""
+    BUILD_IN_SOURCE 1
+    BUILD_COMMAND make
+    INSTALL_COMMAND
+      ${CMAKE_COMMAND} -E make_directory ${indigo_INSTALL_DIR}/lib
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${indigo_INSTALL_DIR}/include
+      COMMAND ${CMAKE_COMMAND} -E copy
+        <SOURCE_DIR>/build/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${indigo_INSTALL_DIR}/lib/
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        <SOURCE_DIR>/indigo_libs/indigo
+        ${indigo_INSTALL_DIR}/include/indigo
+  )
+  add_definitions(-DHAVE_INDIGO=1)
+  include_directories(SYSTEM ${indigo_INSTALL_DIR}/include)
+  list(APPEND PHD_LINK_EXTERNAL
+    ${indigo_INSTALL_DIR}/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX})
+  if(APPLE)
+    # libindigo links against CoreFoundation + IOKit; both transitive via
+    # the dylib's load commands, but we list them explicitly so the
+    # link line is reproducible even if the dylib is rebuilt without them.
+    list(APPEND PHD_LINK_EXTERNAL "-framework CoreFoundation" "-framework IOKit")
+  endif()
+  list(APPEND PHD_EXTERNAL_PROJECT_DEPENDENCIES indigo)
 endif()
 
 #############################################
