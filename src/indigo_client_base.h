@@ -89,6 +89,27 @@ public:
     // arrive asynchronously through OnDefineProperty.
     void EnumerateAllProperties();
 
+    // Property-setting helpers. INDIGO's set-by-name calls dispatch to the
+    // server on whatever thread the caller is on (no waiting); responses
+    // arrive later through OnUpdateProperty. The boolean return only reflects
+    // whether the request was queued — actual success/failure shows up as a
+    // property-state change in OnUpdateProperty.
+    bool SetSwitch1(const char *device, const char *property, const char *item, bool value);
+    bool SetNumber1(const char *device, const char *property, const char *item, double value);
+    bool SetText1(const char *device, const char *property, const char *item, const char *value);
+
+    // Convenience: flip the CONNECTION property's CONNECTED / DISCONNECTED
+    // switch items. The device's connect handshake completes asynchronously
+    // through the CONNECTION property's state transitions, which subclasses
+    // observe in OnUpdateProperty.
+    bool ConnectDevice(const char *device);
+    bool DisconnectDevice(const char *device);
+
+    // Find an item by name inside a property's items[] array. Returns nullptr
+    // if no match. INDIGO has no shipped equivalent (compare INDI's
+    // IUFindNumber / IUFindSwitch) so we provide one here.
+    static indigo_item *FindItem(indigo_property *property, const char *name);
+
 protected:
     // Bus callback hooks. Default implementations return INDIGO_OK so a
     // subclass only has to override the ones it cares about.

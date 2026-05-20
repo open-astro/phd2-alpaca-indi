@@ -115,6 +115,45 @@ void IndigoClientBase::EnumerateAllProperties()
     indigo_enumerate_properties(&m_client, &INDIGO_ALL_PROPERTIES);
 }
 
+bool IndigoClientBase::SetSwitch1(const char *device, const char *property, const char *item, bool value)
+{
+    return indigo_change_switch_property_1(&m_client, device, property, item, value) == INDIGO_OK;
+}
+
+bool IndigoClientBase::SetNumber1(const char *device, const char *property, const char *item, double value)
+{
+    return indigo_change_number_property_1(&m_client, device, property, item, value) == INDIGO_OK;
+}
+
+bool IndigoClientBase::SetText1(const char *device, const char *property, const char *item, const char *value)
+{
+    return indigo_change_text_property_1_raw(&m_client, device, property, item, value) == INDIGO_OK;
+}
+
+bool IndigoClientBase::ConnectDevice(const char *device)
+{
+    // indigo_device_connect is a one-call helper that sets CONNECTION.CONNECTED;
+    // it takes a non-const char* (legacy C signature), hence the cast.
+    return indigo_device_connect(&m_client, const_cast<char *>(device)) == INDIGO_OK;
+}
+
+bool IndigoClientBase::DisconnectDevice(const char *device)
+{
+    return indigo_device_disconnect(&m_client, const_cast<char *>(device)) == INDIGO_OK;
+}
+
+indigo_item *IndigoClientBase::FindItem(indigo_property *property, const char *name)
+{
+    if (!property || !name)
+        return nullptr;
+    for (int i = 0; i < property->count; ++i)
+    {
+        if (strcmp(property->items[i].name, name) == 0)
+            return &property->items[i];
+    }
+    return nullptr;
+}
+
 // Static thunks. INDIGO stores our `this` pointer in client_context; cast back
 // and dispatch. The `client` argument is always &m_client of the same object,
 // so we don't have to disambiguate.

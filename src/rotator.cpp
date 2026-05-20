@@ -51,6 +51,14 @@ static wxString INDIRotatorName()
 }
 #endif
 
+#ifdef ROTATOR_INDIGO
+static wxString INDIGORotatorName()
+{
+    wxString name = pConfig->Profile.GetString("/indigo/rotator", wxEmptyString);
+    return name.empty() ? wxString(_T("INDIGO Rotator")) : wxString::Format("INDIGO Rotator [%s]", name);
+}
+#endif
+
 #ifdef ROTATOR_ALPACA
 static wxString AlpacaRotatorName()
 {
@@ -75,6 +83,9 @@ wxArrayString Rotator::RotatorList()
 #endif
 #ifdef ROTATOR_INDI
     rotatorList.Add(INDIRotatorName());
+#endif
+#ifdef ROTATOR_INDIGO
+    rotatorList.Add(INDIGORotatorName());
 #endif
 #ifdef ROTATOR_ALPACA
     rotatorList.Add(AlpacaRotatorName());
@@ -107,6 +118,15 @@ Rotator *Rotator::Factory(const wxString& choice)
         else if (choice.Find(_T("ASCOM")) != wxNOT_FOUND)
         {
             rotator = new RotatorAscom(choice);
+        }
+#endif
+#ifdef ROTATOR_INDIGO
+        // Must precede the INDI branch: choice.Contains("INDI") would also
+        // match "INDIGO Rotator". StartsWith pins the dispatch to the right
+        // factory.
+        else if (choice.StartsWith(_T("INDIGO")))
+        {
+            rotator = INDIGORotatorFactory::MakeINDIGORotator();
         }
 #endif
 #ifdef ROTATOR_INDI
