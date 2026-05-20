@@ -345,6 +345,14 @@ static wxString INDIMountName()
 }
 #endif
 
+#ifdef GUIDE_INDIGO
+static wxString INDIGOMountName()
+{
+    wxString val = pConfig->Profile.GetString("/indigo/mount", wxEmptyString);
+    return val.empty() ? _("INDIGO Mount") : wxString::Format(_("INDIGO Mount [%s]"), val);
+}
+#endif
+
 wxArrayString Scope::MountList()
 {
     wxArrayString ScopeList;
@@ -376,6 +384,9 @@ wxArrayString Scope::MountList()
 #ifdef GUIDE_INDI
     ScopeList.Add(INDIMountName());
 #endif
+#ifdef GUIDE_INDIGO
+    ScopeList.Add(INDIGOMountName());
+#endif
 #ifdef GUIDE_ALPACA
     ScopeList.Add(AlpacaMountName());
 #endif
@@ -405,6 +416,13 @@ Scope *Scope::Factory(const wxString& choice)
 #ifdef GUIDE_ASCOM
         else if (choice.Contains(_T("ASCOM")))
             pReturn = new ScopeASCOM(choice);
+#endif
+#ifdef GUIDE_INDIGO
+        // Must precede the INDI branch: choice.Contains("INDI") would also
+        // match "INDIGO Mount". StartsWith pins the dispatch to the right
+        // factory.
+        else if (choice.StartsWith(_T("INDIGO")))
+            pReturn = INDIGOScopeFactory::MakeINDIGOScope();
 #endif
 #ifdef GUIDE_INDI
         else if (choice.Contains(_("INDI")))
