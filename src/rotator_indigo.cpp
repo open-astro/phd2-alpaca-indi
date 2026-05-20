@@ -38,6 +38,7 @@
 # include "rotator_indigo.h"
 # include "rotator.h"
 # include "indigo_client_base.h"
+# include "config_indigo.h"
 # include "runinbg.h"
 
 # include <atomic>
@@ -56,6 +57,7 @@ public:
     bool Disconnect() override;
     wxString Name() const override;
     float Position() const override;
+    void ShowPropertyDialog() override;
 
 protected:
     indigo_result OnDefineProperty(indigo_device *device, indigo_property *property, const char *message) override;
@@ -77,7 +79,32 @@ private:
     std::atomic<float> m_angle { POSITION_UNKNOWN };
 
     bool DeviceMatches(const indigo_property *property) const;
+    void Setup();
 };
+
+void RotatorINDIGO::Setup()
+{
+    INDIGOConfig dlg(wxGetApp().GetTopWindow(), _("INDIGO Rotator Selection"));
+    dlg.host = m_host;
+    dlg.port = m_port;
+    dlg.devName = m_devName;
+    dlg.SetSettings();
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+    dlg.SaveSettings();
+    m_host = dlg.host;
+    m_port = dlg.port;
+    m_devName = dlg.devName;
+    pConfig->Profile.SetString("/indigo/host", m_host);
+    pConfig->Profile.SetLong("/indigo/port", m_port);
+    pConfig->Profile.SetString("/indigo/rotator", m_devName);
+    m_displayName = m_devName.empty() ? wxString(_T("INDIGO Rotator")) : wxString::Format("INDIGO Rotator [%s]", m_devName);
+}
+
+void RotatorINDIGO::ShowPropertyDialog()
+{
+    Setup();
+}
 
 RotatorINDIGO::RotatorINDIGO() : IndigoClientBase("phd2-rotator")
 {
@@ -111,6 +138,8 @@ bool RotatorINDIGO::DeviceMatches(const indigo_property *property) const
 
 bool RotatorINDIGO::Connect()
 {
+    if (m_devName.empty())
+        Setup();
     if (m_devName.empty())
     {
         Debug.Write(_T("INDIGO Rotator: no device name configured; declining to connect\n"));

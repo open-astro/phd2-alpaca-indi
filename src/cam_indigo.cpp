@@ -38,6 +38,7 @@
 # include "cam_indigo.h"
 # include "camera.h"
 # include "indigo_client_base.h"
+# include "config_indigo.h"
 # include "image_math.h"
 # include "fitsiowrap.h"
 
@@ -62,6 +63,7 @@ public:
     bool HasNonGuiCapture() override { return true; }
     wxByte BitsPerPixel() override { return 16; }
     bool GetDevicePixelSize(double *devPixelSize) override;
+    void ShowPropertyDialog() override;
 
 protected:
     indigo_result OnDefineProperty(indigo_device *device, indigo_property *property, const char *message) override;
@@ -88,7 +90,32 @@ private:
 
     bool DeviceMatches(const indigo_property *property) const;
     bool ReadFITS(const std::vector<unsigned char>& data, usImage& img);
+    void Setup();
 };
+
+void CameraINDIGO::Setup()
+{
+    INDIGOConfig dlg(wxGetApp().GetTopWindow(), _("INDIGO Camera Selection"));
+    dlg.host = m_host;
+    dlg.port = m_port;
+    dlg.devName = m_devName;
+    dlg.SetSettings();
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+    dlg.SaveSettings();
+    m_host = dlg.host;
+    m_port = dlg.port;
+    m_devName = dlg.devName;
+    pConfig->Profile.SetString("/indigo/host", m_host);
+    pConfig->Profile.SetLong("/indigo/port", m_port);
+    pConfig->Profile.SetString("/indigo/camera", m_devName);
+    Name = m_devName.empty() ? wxString(_T("INDIGO Camera")) : wxString::Format(_T("INDIGO Camera [%s]"), m_devName);
+}
+
+void CameraINDIGO::ShowPropertyDialog()
+{
+    Setup();
+}
 
 CameraINDIGO::CameraINDIGO() : IndigoClientBase("phd2-camera")
 {
@@ -96,6 +123,7 @@ CameraINDIGO::CameraINDIGO() : IndigoClientBase("phd2-camera")
     HasGainControl = false;
     HasSubframes = false;
     HasCooler = false;
+    PropertyDialogType = PROPDLG_ANY;
 
     m_host = pConfig->Profile.GetString("/indigo/host", _T("localhost"));
     m_port = pConfig->Profile.GetLong("/indigo/port", 7624);
@@ -117,6 +145,8 @@ bool CameraINDIGO::DeviceMatches(const indigo_property *property) const
 
 bool CameraINDIGO::Connect(const wxString& camId)
 {
+    if (m_devName.empty())
+        Setup();
     if (m_devName.empty())
     {
         Debug.Write(_T("INDIGO Camera: no device name configured; declining to connect\n"));

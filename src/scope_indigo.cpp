@@ -38,6 +38,7 @@
 # include "scope_indigo.h"
 # include "scope.h"
 # include "indigo_client_base.h"
+# include "config_indigo.h"
 # include "runinbg.h"
 
 # include <atomic>
@@ -54,6 +55,8 @@ public:
 
     bool Connect() override;
     bool Disconnect() override;
+    bool HasSetupDialog() const override { return true; }
+    void SetupDialog() override;
 
     MOVE_RESULT Guide(GUIDE_DIRECTION direction, int duration) override;
     bool HasNonGuiMove() override { return true; }
@@ -88,7 +91,32 @@ private:
     std::atomic<double> m_dec { UNKNOWN_DECLINATION };
 
     bool DeviceMatches(const indigo_property *property) const;
+    void Setup();
 };
+
+void ScopeINDIGO::Setup()
+{
+    INDIGOConfig dlg(wxGetApp().GetTopWindow(), _("INDIGO Mount Selection"));
+    dlg.host = m_host;
+    dlg.port = m_port;
+    dlg.devName = m_devName;
+    dlg.SetSettings();
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+    dlg.SaveSettings();
+    m_host = dlg.host;
+    m_port = dlg.port;
+    m_devName = dlg.devName;
+    pConfig->Profile.SetString("/indigo/host", m_host);
+    pConfig->Profile.SetLong("/indigo/port", m_port);
+    pConfig->Profile.SetString("/indigo/mount", m_devName);
+    m_displayName = m_devName.empty() ? wxString(_T("INDIGO Mount")) : wxString::Format("INDIGO Mount [%s]", m_devName);
+}
+
+void ScopeINDIGO::SetupDialog()
+{
+    Setup();
+}
 
 ScopeINDIGO::ScopeINDIGO() : IndigoClientBase("phd2-mount")
 {
@@ -112,6 +140,8 @@ bool ScopeINDIGO::DeviceMatches(const indigo_property *property) const
 
 bool ScopeINDIGO::Connect()
 {
+    if (m_devName.empty())
+        Setup();
     if (m_devName.empty())
     {
         Debug.Write(_T("INDIGO Mount: no device name configured; declining to connect\n"));

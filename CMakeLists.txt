@@ -474,10 +474,12 @@ list(APPEND phd2_SRC
     ${phd_src_dir}/indi_discovery.h
 )
 
-# Shared INDIGO client base (gated by HAVE_INDIGO; compiles out otherwise).
+# Shared INDIGO client base + config dialog (gated by HAVE_INDIGO).
 list(APPEND phd2_SRC
     ${phd_src_dir}/indigo_client_base.cpp
     ${phd_src_dir}/indigo_client_base.h
+    ${phd_src_dir}/config_indigo.cpp
+    ${phd_src_dir}/config_indigo.h
 )
 
 # INDIGO rotator (gated by ROTATOR_INDIGO macro in rotators.h).
