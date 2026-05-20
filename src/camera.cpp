@@ -57,6 +57,10 @@ wxSize UNDEFINED_FRAME_SIZE = wxSize(0, 0);
 # include "cam_indi.h"
 #endif
 
+#if defined(INDIGO_CAMERA)
+# include "cam_indigo.h"
+#endif
+
 #if defined(ASCOM_CAMERA)
 # include "cam_ascom.h"
 #endif
@@ -123,6 +127,14 @@ static wxString INDICamName()
 }
 #endif
 
+#if defined(INDIGO_CAMERA)
+static wxString INDIGOCamName()
+{
+    wxString name = pConfig->Profile.GetString("/indigo/camera", wxEmptyString);
+    return name.empty() ? wxString(_T("INDIGO Camera")) : wxString::Format("INDIGO Camera [%s]", name);
+}
+#endif
+
 wxArrayString GuideCamera::GuideCameraList()
 {
     wxArrayString CameraList;
@@ -133,6 +145,9 @@ wxArrayString GuideCamera::GuideCameraList()
 #endif
 #if defined(INDI_CAMERA)
     CameraList.Add(INDICamName());
+#endif
+#if defined(INDIGO_CAMERA)
+    CameraList.Add(INDIGOCamName());
 #endif
 #if defined(ASCOM_CAMERA)
     {
@@ -167,6 +182,12 @@ GuideCamera *GuideCamera::Factory(const wxString& choice)
         // each transport's displayName helper (ASCOM). Avoid plain Contains()
         // matches: a vendor name containing "INDI"/"Alpaca"/"ASCOM" anywhere
         // would otherwise misroute.
+#if defined(INDIGO_CAMERA)
+        else if (choice.StartsWith(_T("INDIGO Camera")))
+        {
+            pReturn = INDIGOCameraFactory::MakeINDIGOCamera();
+        }
+#endif
 #if defined(INDI_CAMERA)
         else if (choice.StartsWith(_T("INDI Camera")))
         {
