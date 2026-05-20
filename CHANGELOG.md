@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- INDIGO driver scaffolding for cameras, mounts, and rotators. New header stubs `src/cam_indigo.h`, `src/scope_indigo.h`, `src/rotator_indigo.h` declare `INDIGO*Factory::Make*()` entry points, and the registries (`cameras.h`, `scopes.h`, `rotators.h`) gate them behind `INDIGO_CAMERA` / `GUIDE_INDIGO` / `ROTATOR_INDIGO` defines on Windows/macOS/Linux, mirroring how the INDI drivers are wired. Implementation, dispatch wiring in `camera.cpp`/`scope.cpp`/`rotator.cpp`, and the CMake SDK find/link will land in follow-up commits.
 - ASCOM camera support on Windows. Ports upstream `cam_ascom.{cpp,h}` and wires the ASCOM Chooser's registered Camera devices into the New Profile Wizard's camera dropdown, mirroring how the existing mount/rotator paths surface ASCOM drivers. The driver itself lives outside PHD2 — the user installs whatever ASCOM camera driver their hardware vendor ships, and PHD2 talks to it via late-bound COM (no vendor SDK is bundled). Gated by `ASCOM_CAMERA` in `cameras.h`, only enabled when `__WINDOWS__` is defined; the source files compile out on macOS/Linux.
 
 ### Changed

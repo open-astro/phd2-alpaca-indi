@@ -45,11 +45,13 @@
 #endif
 
 #define ROTATOR_INDI
+#define ROTATOR_INDIGO
 #define ROTATOR_SIMULATOR
 
 #include "rotator.h"
 #include "rotator_ascom.h"
 #include "rotator_alpaca.h"
 #include "rotator_indi.h"
+#include "rotator_indigo.h"
 
 #endif // ROTATORS_INCLUDED
