@@ -72,6 +72,7 @@ add_custom_target(CmakeAdditionalFiles
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/FindASCOM_INTERFACE.cmake
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/FindCFITSIO.cmake
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/FindINDI.cmake
+  ${PHD_PROJECT_ROOT_DIR}/cmake_modules/FindINDIGO.cmake
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/FindNova.cmake
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/PHD2BuildDoc.cmake
   ${PHD_PROJECT_ROOT_DIR}/cmake_modules/PHD2GenerateDocScript.cmake
@@ -210,6 +211,14 @@ list(APPEND cam_SRC
   ${phd_src_dir}/cam_indi.h
 )
 
+# INDIGO camera support (gated by HAVE_INDIGO / INDIGO_CAMERA macro in cameras.h).
+# Files are always listed so the source tree is platform-independent; the macro
+# compiles them out when libindigo isn't found, mirroring cam_ascom.
+list(APPEND cam_SRC
+  ${phd_src_dir}/cam_indigo.cpp
+  ${phd_src_dir}/cam_indigo.h
+)
+
 # ASCOM camera support (Windows-only; gated by ASCOM_CAMERA macro in cameras.h).
 # Files are always listed so the source tree is platform-independent; the macro
 # compiles them out on non-Windows, mirroring how scope_ascom is handled above.
@@ -251,6 +260,12 @@ set(scopes_SRC
 list(APPEND scopes_SRC
   ${phd_src_dir}/scope_indi.cpp
   ${phd_src_dir}/scope_indi.h
+)
+
+# INDIGO mount support (gated by GUIDE_INDIGO macro in scopes.h).
+list(APPEND scopes_SRC
+  ${phd_src_dir}/scope_indigo.cpp
+  ${phd_src_dir}/scope_indigo.h
 )
 source_group(Scopes FILES ${scopes_SRC})
 
@@ -457,6 +472,12 @@ list(APPEND phd2_SRC
     ${phd_src_dir}/indi_gui.h
     ${phd_src_dir}/indi_discovery.cpp
     ${phd_src_dir}/indi_discovery.h
+)
+
+# INDIGO rotator (gated by ROTATOR_INDIGO macro in rotators.h).
+list(APPEND phd2_SRC
+    ${phd_src_dir}/rotator_indigo.cpp
+    ${phd_src_dir}/rotator_indigo.h
 )
 source_group(src FILES ${phd2_SRC})
 

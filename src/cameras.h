@@ -44,7 +44,9 @@
 // drivers (no vendor SDKs are bundled), mirroring how scopes.h gates GUIDE_ASCOM.
 # define ALPACA_CAMERA
 # define INDI_CAMERA
-# define INDIGO_CAMERA
+# ifdef HAVE_INDIGO
+#  define INDIGO_CAMERA
+# endif
 # define SIMULATOR
 
 # if defined(__WINDOWS__)

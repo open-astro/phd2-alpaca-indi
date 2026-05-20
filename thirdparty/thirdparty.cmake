@@ -362,6 +362,29 @@ endif()
 
 #############################################
 #
+#  INDIGO (CloudMakers protocol; coexists with INDI)
+#
+#  Local-development lookup only for now: FindINDIGO.cmake hunts $INDIGO_ROOT,
+#  a sibling ../indigo checkout, then /usr/local + /opt/homebrew. The library
+#  is intentionally optional — if not found we silently disable the INDIGO
+#  transport instead of failing the build, since the INDI/Alpaca paths still
+#  work standalone. An ExternalProject_Add fallback (mirroring the INDI one
+#  above) will land alongside the Windows port once that path is in scope.
+#
+#############################################
+
+find_package(INDIGO QUIET)
+if(INDIGO_FOUND)
+  message(STATUS "INDIGO found at ${INDIGO_INCLUDE_DIR} (lib: ${INDIGO_LIBRARY})")
+  add_definitions(-DHAVE_INDIGO=1)
+  include_directories(SYSTEM ${INDIGO_INCLUDE_DIR})
+  list(APPEND PHD_LINK_EXTERNAL ${INDIGO_LIBRARIES})
+else()
+  message(STATUS "INDIGO not found — INDIGO transport will be compiled out (set INDIGO_ROOT to enable)")
+endif()
+
+#############################################
+#
 # Windows specific dependencies
 # - Visual Leak Detector (optional)
 # - OpenCV
