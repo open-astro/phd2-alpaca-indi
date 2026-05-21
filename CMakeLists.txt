@@ -594,6 +594,57 @@ if(APPLE)
   # "OpenAstro PHD2.app"/Contents/Frameworks/ happens in build-dmg.sh at packaging
   # time, not here — dev incremental builds run faster against Homebrew
   # dylibs in place, and only the redistributable .dmg needs the rewrite.
+  #
+  # libindigo is the exception that needs bundling at every dev build (not
+  # just packaging): its load command points at a build-tree path under
+  # ${CMAKE_BINARY_DIR}/libindigo/lib/. When the .app is launched from Finder
+  # in a Documents/Desktop/Downloads location, macOS Sonoma+ applies a
+  # file-system sandbox that blocks open() on those paths — dyld then fails
+  # with "Library missing". The libindigo install_name was already rewritten
+  # to @loader_path/libindigo.dylib in thirdparty.cmake's ExternalProject
+  # INSTALL_COMMAND, so we just need to drop a copy next to the phd2 binary
+  # inside the .app. The codesign re-sign is required because copying a
+  # signed-or-unsigned dylib into a signed bundle invalidates the bundle's
+  # signature.
+  if(HAVE_INDIGO_LIBRARY_PATH)
+    set(_indigo_bundle_libs
+      "${HAVE_INDIGO_LIBRARY_PATH}"
+    )
+    if(HAVE_INDIGO_LIBUSB_PATH)
+      # libusb-1.0.0.dylib is INDIGO's bundled libusb, referenced from
+      # libindigo via @loader_path. Only present on the ExternalProject path;
+      # USE_SYSTEM_LIBINDIGO users rely on whatever the system libindigo
+      # links against (typically a Homebrew or /usr/local libusb that dyld
+      # finds via its own search paths).
+      list(APPEND _indigo_bundle_libs "${HAVE_INDIGO_LIBUSB_PATH}")
+    endif()
+    foreach(_lib IN LISTS _indigo_bundle_libs)
+      get_filename_component(_lib_name "${_lib}" NAME)
+      add_custom_command(
+        TARGET phd2 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+          "${_lib}"
+          "$<TARGET_BUNDLE_CONTENT_DIR:phd2>/MacOS/${_lib_name}"
+        COMMAND chmod +w "$<TARGET_BUNDLE_CONTENT_DIR:phd2>/MacOS/${_lib_name}"
+        COMMAND install_name_tool -id "@loader_path/${_lib_name}"
+          "$<TARGET_BUNDLE_CONTENT_DIR:phd2>/MacOS/${_lib_name}"
+        COMMAND codesign --force --sign -
+          "$<TARGET_BUNDLE_CONTENT_DIR:phd2>/MacOS/${_lib_name}"
+        COMMENT "Bundling ${_lib_name} into .app"
+        VERBATIM
+      )
+    endforeach()
+    # Re-sign the main binary last, after both dylibs are bundled and
+    # codesigned themselves — copying dylibs into the bundle invalidates
+    # the binary's signature.
+    add_custom_command(
+      TARGET phd2 POST_BUILD
+      COMMAND codesign --force --sign -
+        "$<TARGET_FILE:phd2>"
+      COMMENT "Re-signing phd2 binary after dylib bundling"
+      VERBATIM
+    )
+  endif()
 
 elseif(WIN32)
 

@@ -386,6 +386,10 @@ if(USE_SYSTEM_LIBINDIGO)
     add_definitions(-DHAVE_INDIGO=1)
     include_directories(SYSTEM ${INDIGO_INCLUDE_DIR})
     list(APPEND PHD_LINK_EXTERNAL ${INDIGO_LIBRARIES})
+    # macOS POST_BUILD in CMakeLists.txt uses this to bundle libindigo into
+    # the .app and rewrite the load command to @loader_path/. The unbundled
+    # absolute path would be unreadable from a Documents-sandboxed launch.
+    set(HAVE_INDIGO_LIBRARY_PATH "${INDIGO_LIBRARY}")
   else()
     message(STATUS "INDIGO not found (USE_SYSTEM_LIBINDIGO=ON) — INDIGO transport disabled")
   endif()
@@ -394,31 +398,79 @@ elseif(WIN32)
 else()
   include(ExternalProject)
   set(indigo_INSTALL_DIR ${CMAKE_BINARY_DIR}/libindigo)
-  # The bundled `make` target produces build/lib/libindigo.{a,$SOEXT} and
-  # leaves the public headers in indigo_libs/indigo/. We don't run
-  # `make install` (which writes to /usr/local with sudo); instead we copy
-  # the artifacts into ${indigo_INSTALL_DIR} ourselves.
+  # INDIGO's top-level `make` builds libindigo AND every driver (CCD/mount/
+  # focuser/... — hundreds of them). Drivers aren't useful to us — we're an
+  # INDIGO client, not a daemon — and several Mac driver dylibs ship without
+  # enough Mach-O headerpad to take an install_name_tool rewrite, which makes
+  # the unscoped `make` reliably fail partway through driver compilation on
+  # macOS. Scope to `make init && make -C indigo_libs all` so we get libindigo
+  # + its bundled deps (libusb/libhidapi/libjpeg/libtiff/libraw/libindigocat)
+  # without ever entering indigo_drivers/.
+  #
+  # Force -j1 inside the sub-make: INDIGO's bundled-deps Makefile races under
+  # parallel make (jpeglib.h consumed before libjpeg installs, libindigocat
+  # links before libusb is built, hidapi's configure fires while libtool is
+  # still being staged elsewhere). Resetting MAKEFLAGS keeps the outer
+  # phd2 build's -jN out of INDIGO's recursion; PHD2 itself still
+  # parallelises.
+  #
+  # We don't run `make install` (which writes to /usr/local with sudo);
+  # INSTALL_COMMAND below copies the artifacts into ${indigo_INSTALL_DIR}
+  # ourselves.
   ExternalProject_Add(
     indigo
     GIT_REPOSITORY https://github.com/indigo-astronomy/indigo.git
     GIT_TAG 22706e492206d29dd3e6fd6fa16fad91650f7491 # known-good HEAD circa 2026-05
     CONFIGURE_COMMAND ""
     BUILD_IN_SOURCE 1
-    BUILD_COMMAND make
+    BUILD_COMMAND sh -c "MAKEFLAGS= make init && MAKEFLAGS= make -C indigo_libs -j1 all"
     INSTALL_COMMAND
       ${CMAKE_COMMAND} -E make_directory ${indigo_INSTALL_DIR}/lib
       COMMAND ${CMAKE_COMMAND} -E make_directory ${indigo_INSTALL_DIR}/include
       COMMAND ${CMAKE_COMMAND} -E copy
         <SOURCE_DIR>/build/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}
         ${indigo_INSTALL_DIR}/lib/
+      COMMAND ${CMAKE_COMMAND} -E copy
+        <SOURCE_DIR>/build/lib/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${indigo_INSTALL_DIR}/lib/
       COMMAND ${CMAKE_COMMAND} -E copy_directory
         <SOURCE_DIR>/indigo_libs/indigo
         ${indigo_INSTALL_DIR}/include/indigo
+      # Rewrite install_names to @loader_path BEFORE phd2 links against
+      # libindigo. Otherwise the linker would embed the original build-tree
+      # paths (under ${CMAKE_BINARY_DIR}/indigo-prefix/src/indigo/build/lib/)
+      # into phd2's LC_LOAD_DYLIB and into libindigo's own LC_LOAD_DYLIB for
+      # libusb. dyld would then fail at runtime — and on Sonoma+ the .app's
+      # file-system sandbox blocks open() entirely when the path is under
+      # Documents/Desktop/Downloads, so even existing files become unreadable.
+      #
+      # With install_names rewritten to @loader_path/, the POST_BUILD step in
+      # the top-level CMakeLists.txt just drops copies of libindigo + libusb
+      # next to the phd2 binary inside the .app bundle.
+      #
+      # libindigocat is statically linked into libindigo (.a, not .dylib), so
+      # it doesn't need bundling. libhidapi, libjpeg, libtiff, libraw are
+      # also all static — confirm with `otool -L libindigo.dylib`.
+      COMMAND install_name_tool -id @loader_path/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${indigo_INSTALL_DIR}/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}
+      COMMAND install_name_tool -id @loader_path/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${indigo_INSTALL_DIR}/lib/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}
+      COMMAND install_name_tool
+        -change <SOURCE_DIR>/build/lib/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}
+        @loader_path/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${indigo_INSTALL_DIR}/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}
   )
   add_definitions(-DHAVE_INDIGO=1)
   include_directories(SYSTEM ${indigo_INSTALL_DIR}/include)
   list(APPEND PHD_LINK_EXTERNAL
     ${indigo_INSTALL_DIR}/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX})
+  # macOS POST_BUILD in CMakeLists.txt uses these to bundle libindigo + its
+  # bundled libusb into the .app. Both install_names were rewritten to
+  # @loader_path/ in the ExternalProject INSTALL_COMMAND above.
+  set(HAVE_INDIGO_LIBRARY_PATH
+    "${indigo_INSTALL_DIR}/lib/libindigo${CMAKE_SHARED_LIBRARY_SUFFIX}")
+  set(HAVE_INDIGO_LIBUSB_PATH
+    "${indigo_INSTALL_DIR}/lib/libusb-1.0.0${CMAKE_SHARED_LIBRARY_SUFFIX}")
   if(APPLE)
     # libindigo links against CoreFoundation + IOKit; both transitive via
     # the dylib's load commands, but we list them explicitly so the
